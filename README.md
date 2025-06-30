@@ -31,5 +31,5 @@ pip3 install -r requirements.txt
 AWTK2025 should now be ready to run. 
 
 ## Authors 
-[Jeeho Kim](https://github.com/kimjooooo)
+[Jeeho Kim](https://github.com/kimjooooo)  
 [Seolin Jung](https://github.com/seolinjung)
