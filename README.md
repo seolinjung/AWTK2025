@@ -1,6 +1,6 @@
 # AWTK2025
 
-AWTK2025 is a database cleansing automation project aimed to reduce the manual work of prevous years to validate and normalize submitted inputs of at least 8,000+ attendees of Agentforce World Tour Korea.  
+AWTK2025 is a database cleansing automation project initiated by two interns at Salesforce Korea. It aims to reduce the manual work of prevous years to validate and normalize submitted inputs of at least 8,000+ attendees of Agentforce World Tour Korea from 2025 onwards. 
 
 ## Installation
 
