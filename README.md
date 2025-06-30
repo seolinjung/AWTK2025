@@ -12,7 +12,7 @@ You must have `pip` in order to download the required packages.
 python3 -m ensure pip --upgrade
 ```
 
-If you have multiple versions of Python on your operating system, it helps to run `python3.13 ` in place of `python`. 
+If you have multiple versions of Python on your operating system, it helps to run `python3.13` in place of `python`. 
 
 In order to ensure an isolated environment for clean installation, we must set up our virtual environment. Make sure you are in the correct directory. 
 
