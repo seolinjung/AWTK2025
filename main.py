@@ -55,9 +55,6 @@ def main(args):
 
 
 
-
-
-
     '''
     1. organize xlsx into one folder 
     2. inefficient use of lists  
@@ -76,8 +73,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     # parser.add_argument("--parser")
-    
-
 
     # parser.add_argument("--date", type=str, default="0615")
     # parser.add_argument("--file", type=str, default="Main")
