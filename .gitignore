@@ -2,3 +2,6 @@
 .AppleDouble
 .LSOverride
 raw_db
+data
+.vscode
+.venv
