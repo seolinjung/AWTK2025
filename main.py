@@ -5,6 +5,7 @@ import re
 import os
 
 from manipulate_db import match_db, merge_db
+from validate import validate 
 
 def cleanse_duplicate_emails(db):
 

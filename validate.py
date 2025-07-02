@@ -54,9 +54,6 @@ def ref_domain(domain):
         - 기타 비유효: misc
     '''
 
-
-
-
 def validate(row):
 
     # extract array of values from the single row 
