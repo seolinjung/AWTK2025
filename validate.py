@@ -54,7 +54,9 @@ class Classification:
     # retrive an array format of the request json file
     def retrieve_json(self, input):
 
+        # actual json file name
         name = input + ".json"
+        # get path name
         path = os.path.join(self.json_path, input)
 
         # get the array
@@ -64,14 +66,9 @@ class Classification:
     # normalize domain 
     def normalize_domain(self):
 
+        # get the value before the period. 'samsung.com' should return 'samsung'
         domain_arr = self.domain.split('.')
         return domain_arr[0]
-    
-    # normalize email 
-    def normalize_email(self):
-
-        email_arr = self.email.split('@')
-        return email_arr[0]
     
     # return the classification result 
     def classify(self):
@@ -108,12 +105,15 @@ class Classification:
         for char in list(self.name):
             if char.isdigit(): 
                 return '불분명한 이름 및 회사명'
-            
+                        
         return ''
 
     def validate(self):
 
+        # og code 참고해서 순서는 거의 그대로 따라해야 함
+
         # valid - record owner in AE & BDR 
+        # quip 참고해서 potential 수정 
         if self.ref_ae_bdr(self.record_owner):
             return '유효', ''
 
@@ -128,9 +128,6 @@ class Classification:
         
         classification_result = self.classify()
 
-        if classification_result == '':
-            return '유효', ''
-        
         return '비유효', classification_result
         # unfinished logic 
 
@@ -154,49 +151,37 @@ class Classification:
             - 학교 소속     
                 - title is 학생, ALWAYS 
                 - company ends with 학교 or university && title is invalid-keywords: '학교 소속' (above title logic does not hold for yeji)
-
             - 군인 
                 - title is 군인 
-
             - 프리랜서 
                 - title or company is 'freelancer' or '프리랜서' 
-
             - 무직 
                 - title or company is in invalid-keywords: '무직' 
-
             - 에이전시 
                 - domain is in invalid-domains: 'agencies' 
-
             - 경쟁사 
                 - domain (normalized) is in invalid-domains: 'competitors' or company is in 'competitors' 
-
             - 기타 비유효 
                 - 
-            
             - domain is 
                 - invalid-domains: 'agencies', 'competitors'
-
 
             - 불분명한 이름 및 회사명 
                 - company == 'company' or 'startup'
                 - 이름에 숫자 포함, 회사명 키워드 포함 
             
-
         3. 홀딩 if 
+            - 유효/비유효만 확실히 분류하고
+            - 인간이 review할 것도 홀딩으로 잘 분류해야 한다 - 목표 
 
             - 기타 비유효 
                 - title or company == personal 
-            
             - 불분명한 이름 및 회사명 
                 -  name has digits
-
             - 불분명한 eMail
                 - 도메인에 숫자 포함 또는 빈 값 
-
             - 직책
                 - if title in invalid-keywords: 직책 
-            
             - Free email
                 - email is in invalid-domains: 'free-emails'
-
         '''
