@@ -19,7 +19,7 @@ class Classification:
         self.record_owner = str(row['Related Record Owner']).strip()
 
         # normalized domain
-        self.normalized_domain = self.normalize_domain(self.domain)
+        self.normalized_domain = self.normalize_domain()
 
         # path to json folder 
         self.json_path = os.path.join('data', 'exceptions')
@@ -37,13 +37,15 @@ class Classification:
         # make it into an array for deconstructing
         record_owner_arr = self.record_owner.split()
 
+        alt_order = ""
+
         # "Hong Gil Dong" or "Gil Dong Hong"
         if len(record_owner_arr) == 3:
             alt_order = " ".join([self.record_owner[2], self.record_owner[0], self.record_owner[1]])
 
         # "Hong Gildong" or "Gildong Hong"
         if len(record_owner_arr) == 2:
-            alt_order = " ".join(self.record_owner[1], self.record_owner[0])
+            alt_order = " ".join([self.record_owner[1], self.record_owner[0]])
 
         # if the name matches ae bdr list 
         if record_owner_arr in self.ae_bdr or alt_order in self.ae_bdr: 
@@ -57,11 +59,11 @@ class Classification:
         # actual json file name
         name = input + ".json"
         # get path name
-        path = os.path.join(self.json_path, input)
+        path = os.path.join(self.json_path, name)
 
         # get the array
         with open(path, 'r') as file: 
-            return json.load(name)[input]
+            return json.load(file)[input]
     
     # normalize domain 
     def normalize_domain(self):
@@ -105,7 +107,7 @@ class Classification:
         if self.title == 'personal' or self.company == 'personal':
             return '홀딩', '기타 비유효'
         
-        if self.normalized_domain in self.invalid_domains["competitor"] or self.company in self.invalid_cmompanies["competitor"]:
+        if self.normalized_domain in self.invalid_domains["competitor"] or self.company in self.invalid_companies["competitor"]:
             return '비유효', '경쟁사'
 
         if self.company == 'company' or self.company == 'startup':
@@ -116,7 +118,7 @@ class Classification:
                 return '홀딩', '불분명한 이름 및 회사명'
 
         # valid - record owner in AE & BDR 
-        if self.ref_ae_bdr(self.record_owner):
+        if self.ref_ae_bdr():
             return '유효', ''
         
         # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
