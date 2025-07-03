@@ -125,6 +125,7 @@ class Classification:
                 return '유효', ''
                         
         return '유효', ''
+    
 
         '''
         학교 소속 ‘교수', '학생', 'student', '대학생', '대학원생', '석사', '박사 연구원’ - quip
