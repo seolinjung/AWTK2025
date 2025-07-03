@@ -2,6 +2,8 @@ import re
 import json 
 import os
 
+from helper import reverse_dict
+
 class Classification:
 
     def __init__(self, row):
@@ -16,23 +18,21 @@ class Classification:
         self.name = self.first_name + self.last_name
         self.record_owner = str(row['Related Record Owner']).strip()
 
+        # normalized domain
+        self.normalized_domain = self.normalize_domain(self.domain)
+
         # path to json folder 
         self.json_path = os.path.join('data', 'exceptions')
 
         # list of the json arrays, retrieved
-        self.invalid_keywords = self.retrieve_json("invalid-keywords")
-        self.invalid_domains = self.retrieve_json("invalid_domains")
-        self.competitors = self.retrieve_json("competitors")
+        self.invalid_companies = self.retrieve_json("invalid-companies")
+        self.invalid_titles = self.retrieve_json("invalid-titles")
+        self.invalid_domains = self.retrieve_json("invalid-domains")
+        self.valid_titles = self.retrieve_json("valid-titles")
+        self.ae_bdr = self.retrieve_json("ae-bdr")
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
-
-        # define path to ae bdr 
-        ae_bdr_path = os.path.join(self.json_path, 'ae-bdr.json')
-
-        # get the json file array
-        with open(ae_bdr_path, 'r') as file:
-            ae_bdr = json.load(file)['ae-bdr']
         
         # make it into an array for deconstructing
         record_owner_arr = self.record_owner.split()
@@ -46,7 +46,7 @@ class Classification:
             alt_order = " ".join(self.record_owner[1], self.record_owner[0])
 
         # if the name matches ae bdr list 
-        if record_owner_arr in ae_bdr or alt_order in ae_bdr: 
+        if record_owner_arr in self.ae_bdr or alt_order in self.ae_bdr: 
             return True
         
         return False
@@ -73,64 +73,58 @@ class Classification:
     # return the classification result 
     def classify(self):
 
-        if self.title == '학생': 
-            return '학교 소속'
+        if self.title == "학생": 
+            return '비유효', '학교 소속'
+
+        if self.normalized_domain in self.invalid_domains["agency"]:
+            return '비유효', '에이전시'
+        
+        # valid - title is one of these && company is NOT in invalid-keywords: '기타 비유효'
+        if self.title in self.valid_titles["decision-maker"] and self.company not in self.invalid_companies["misc"]:
+            return '유효', ''
         
         if '학교' in self.company or 'university' in self.company: 
-            if self.title in self.invalid_keywords['학교 소속']:
-                return '학교 소속'
-            
-        if self.title == '군인':
-            return '군인'
+            if self.title in self.invalid_titles["academia"]:
+                return '비유효', '학교 소속'
         
-        if self.title in ['freelancer', '프리랜서'] or self.company in ['freelancer', '프리랜서']:
-            return '프리랜서'
+        if self.title in self.invalid_titles["freelancer"] or self.company in self.invalid_companies["freelancer"]:
+            return '비유효', '프리랜서'
         
-        if self.title in self.invalid_keywords['무직'] or self.company in self.invalid_keywords['무직']:
-            return '무직'
-        
-        normalized_domain = self.normalize_domain(self.domain)
-        
-        if normalized_domain in self.invalid_domains['agencies']:
-            return '에이전시'
-        
-        if normalized_domain in self.invalid_domains['competitors'] or self.company in self.competitors:
-            return '경쟁사'
+        if self.title in self.invalid_titles["unemployed"] or self.company in self.invalid_companies["unemployed"]:
+            return '비유효', '무직'
         
         # TODO: 기타 비유효 로직 포함해야 함 
+        for key in self.invalid_titles["misc"]: 
+            if self.title == key: 
+                return '비유효', '기타 비유효'
+        
+        for key in self.invalid_companies["misc"]:
+            if self.company == key:
+                return '비유효', '기타 비유효'
+            
+        if self.title == 'personal' or self.company == 'personal':
+            return '홀딩', '기타 비유효'
+        
+        if self.normalized_domain in self.invalid_domains["competitor"] or self.company in self.invalid_cmompanies["competitor"]:
+            return '비유효', '경쟁사'
 
         if self.company == 'company' or self.company == 'startup':
-            return '불분명한 이름 및 회사명'
+            return '비유효', '불분명한 이름 및 회사명'
         
         for char in list(self.name):
             if char.isdigit(): 
-                return '불분명한 이름 및 회사명'
-                        
-        return ''
-
-    def validate(self):
-
-        # og code 참고해서 순서는 거의 그대로 따라해야 함
+                return '홀딩', '불분명한 이름 및 회사명'
 
         # valid - record owner in AE & BDR 
-        # quip 참고해서 potential 수정 
         if self.ref_ae_bdr(self.record_owner):
             return '유효', ''
-
+        
         # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
-        if self.title == '교수' or self.title == '연구원':
-            if self.record_owner == 'Yeji Yoon' or 'Yoon Yeji': 
+        for key in self.valid_titles["academia"]:
+            if key in self.title and self.record_owner == "Yoon Yeji":
                 return '유효', ''
-        
-        # valid - title is one of these && company is NOT in invalid-keywords: '기타 비유효'
-        if self.title in ['대표', '사장', 'ceo', '팀장'] and self.company not in self.invalid_keywords['기타 비유효']:
-            return '유효', ''
-        
-        classification_result = self.classify()
-
-        return '비유효', classification_result
-        # unfinished logic 
-
+                        
+        return '유효', ''
 
         '''
         학교 소속 ‘교수', '학생', 'student', '대학생', '대학원생', '석사', '박사 연구원’ - quip
