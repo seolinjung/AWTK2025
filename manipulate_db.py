@@ -26,3 +26,13 @@ def merge_db(main, sub, column):
     main = main.merge(sub, on=column, how="left")
 
     return main 
+
+def cleanse_duplicate_emails(db):
+
+    '''
+    scan file and search for duplicates. 
+    currently, the logic is simple, but it is up for modification.
+    '''
+
+    return db.drop_duplicates(subset="Email", keep="last")
+
