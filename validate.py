@@ -2,7 +2,7 @@ import re
 import json 
 import os
 
-from helper import reverse_dict
+# from helper import reverse_dict
 
 class Classification:
 
@@ -75,6 +75,7 @@ class Classification:
     # return the classification result 
     def classify(self):
 
+        # 필수? 
         if self.title == "학생": 
             return '비유효', '학교 소속'
 
@@ -120,6 +121,15 @@ class Classification:
         # valid - record owner in AE & BDR 
         if self.ref_ae_bdr():
             return '유효', ''
+        
+        '''
+        add free email logic 
+        # Free email
+        if domain in free_email_domains:
+        return '홀딩', 'Free email'
+        - 홀딩인데 직급, 회사이 정상적이면 유효 
+        
+        '''
         
         # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
         for key in self.valid_titles["academia"]:

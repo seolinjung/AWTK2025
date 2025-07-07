@@ -5,6 +5,7 @@ def extract_domain(email):
         return ''
     return str(email).split("@")[-1].lower()
 
+'''
 def reverse_dict(dict):
 
     reversed = {}
@@ -15,5 +16,5 @@ def reverse_dict(dict):
             reversed[value] = key 
 
     return reversed
-        
+'''       
 

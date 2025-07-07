@@ -21,6 +21,7 @@ def main(args):
     # to main and sdr confirm, confirm mail 
     main_path = os.path.join(db_root_path, "main.csv")
     sdr_confirm_path = os.path.join(db_root_path, "sdr_confirm.csv")
+    # - seonhye folder change path 
     confirm_mail_path = os.path.join(db_root_path, "confirm_mail.csv")
 
     # read main file 
@@ -45,18 +46,23 @@ def main(args):
     main_df_copy = merge_db(main_df_copy, confirm_mail_df, "Email")
 
     # cleanse duplicate emails 
+    #TODO: 로직 다시 생각 
     main_df_copy = cleanse_duplicate_emails(main_df_copy)
 
     # extract domain and apply to copy of main
     main_df_copy["domain"] = main_df_copy["Email"].apply(extract_domain)
 
-    # create unique column
+    # create unique column - 
+    # based on duplicate emails - 
+    # TODO: depends on how we handle cleansing duplicate emails from top 
     email_count = main_df_copy["Email"].value_counts()
     main_df_copy["unique"] = main_df_copy["Email"].map(email_count)
 
     # apply classification
     main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(apply_classification, axis=1, result_type='expand')
 
+    # 선혜님 덮어씌우는 단계 
+    # 4-c logic 
     print(main_df_copy.head())
 
 if __name__ == "__main__":
