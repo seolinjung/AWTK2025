@@ -2,7 +2,7 @@ import re
 import json 
 import os
 
-# from helper import reverse_dict
+from helper import retrieve_json, normalize_domain
 
 class Classification:
 
@@ -19,10 +19,7 @@ class Classification:
         self.record_owner = str(row['Related Record Owner']).strip()
 
         # normalized domain
-        self.normalized_domain = self.normalize_domain()
-
-        # path to json folder 
-        self.json_path = os.path.join('data', 'exceptions')
+        self.normalized_domain = normalize_domain(self.domain)
 
         # list of the json arrays, retrieved
         self.invalid_companies = self.retrieve_json("invalid-companies")
@@ -53,38 +50,19 @@ class Classification:
         
         return False
     
-    # retrive an array format of the request json file
-    def retrieve_json(self, input):
-
-        # actual json file name
-        name = input + ".json"
-        # get path name
-        path = os.path.join(self.json_path, name)
-
-        # get the array
-        with open(path, 'r') as file: 
-            return json.load(file)[input]
-    
-    # normalize domain 
-    def normalize_domain(self):
-
-        # get the value before the period. 'samsung.com' should return 'samsung'
-        domain_arr = self.domain.split('.')
-        return domain_arr[0]
-    
-    def match(self, value, category, valid="valid"):
+    def match(self, type, value, category, valid="valid"):
 
         lookup = [] 
 
-        if value == "title":
+        if value == self.title:
             if valid == "valid":
                 lookup = self.valid_titles[category]
             lookup = self.invalid_titles[category]
 
-        if value == "company":
+        if value == self.company:
             lookup = self.invalid_companies[category]
 
-        if value == "domain":
+        if value == self.domain or value == self.normalized_domain:
             lookup = self.invalid_domains[category]
 
         return any(k in value for k in lookup)
@@ -99,8 +77,7 @@ class Classification:
         if self.match(self.domain, "agency"):
             return '비유효', '에이전시'
         
-        # valid - title is one of these && company is NOT in invalid-keywords: '기타 비유효'
-        if self.match(self.title, "decision_maker", "valid") and not self.match(self.company, "misc"):
+        if self.match(self.title, "decision-maker", "valid") and not self.match(self.company, "misc"):
             return '유효', ''
         
         if self.match(self.company, "academia") and self.match(self.title, "academia"):
@@ -113,41 +90,40 @@ class Classification:
             return '비유효', '무직'
         
         # TODO: 기타 비유효 로직 포함해야 함 
-
-
-        for key in self.invalid_titles["misc"]: 
-            if self.title == key: 
-                return '비유효', '기타 비유효'
+        if self.match(self.title, "misc") or self.match(self.company, "misc") or self.company == "intern": 
+            return '비유효', '기타 비유효'
         
-        for key in self.invalid_companies["misc"]:
-            if self.company == key:
-                return '비유효', '기타 비유효'
-            
-        if self.title == 'personal' or self.company == 'personal':
+        if self.title == "personal" or self.company == "personal": 
             return '홀딩', '기타 비유효'
         
-        if self.normalized_domain in self.invalid_domains["competitor"] or self.company in self.invalid_companies["competitor"]:
+        # exception in match logic: domain must match exactly 
+        if self.normalized_domain in self.invalid_domains["competitor"] or self.match(self.company, "competitor"):
             return '비유효', '경쟁사'
-
-        if self.company == 'company' or self.company == 'startup':
-            return '비유효', '불분명한 이름 및 회사명'
         
-        for char in list(self.name):
-            if char.isdigit(): 
-                return '홀딩', '불분명한 이름 및 회사명'
-
         # valid - record owner in AE & BDR 
         if self.ref_ae_bdr():
             return '유효', ''
         
-        if self.normalized_domain in self.invalid_domains["free-email"]:
+        if self.match(self.company, "unspecified"): 
+            return '비유효', '불분명한 이름 및 회사명'
+        
+        if any(char.isdigit() for char in self.name):
+            return '홀딩', '불분명한 이름 및 회사명'
+        
+        if not self.domain: 
+            return '비유효', '불분명한 e-mail'
+        
+        if self.match(self.title, "occupation"):
+            return '홀딩', '직책'
+        
+        if self.match(self.normalized_domain, "free-email"): 
             if self.company.isalnum() and self.title.isalnum():
                 return '유효', ''
             return '홀딩', 'Free email' 
         
         # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
-        for key in self.valid_titles["academia"]:
-            if key in self.title and self.record_owner == "Yoon Yeji":
+        if self.match(self.title, "academia", "valid"):
+            if self.record_owner == "Yoon Yeji":
                 return '유효', ''
                         
         return '유효', ''
