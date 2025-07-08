@@ -72,6 +72,23 @@ class Classification:
         domain_arr = self.domain.split('.')
         return domain_arr[0]
     
+    def match(self, value, category, valid="valid"):
+
+        lookup = [] 
+
+        if value == "title":
+            if valid == "valid":
+                lookup = self.valid_titles[category]
+            lookup = self.invalid_titles[category]
+
+        if value == "company":
+            lookup = self.invalid_companies[category]
+
+        if value == "domain":
+            lookup = self.invalid_domains[category]
+
+        return any(k in value for k in lookup)
+
     # return the classification result 
     def classify(self):
 
@@ -79,24 +96,25 @@ class Classification:
         if self.title == "학생": 
             return '비유효', '학교 소속'
 
-        if self.normalized_domain in self.invalid_domains["agency"]:
+        if self.match(self.domain, "agency"):
             return '비유효', '에이전시'
         
         # valid - title is one of these && company is NOT in invalid-keywords: '기타 비유효'
-        if self.title in self.valid_titles["decision-maker"] and self.company not in self.invalid_companies["misc"]:
+        if self.match(self.title, "decision_maker", "valid") and not self.match(self.company, "misc"):
             return '유효', ''
         
-        if '학교' in self.company or 'university' in self.company: 
-            if self.title in self.invalid_titles["academia"]:
-                return '비유효', '학교 소속'
+        if self.match(self.company, "academia") and self.match(self.title, "academia"):
+            return '비유효', '학교 소속'
         
-        if self.title in self.invalid_titles["freelancer"] or self.company in self.invalid_companies["freelancer"]:
+        if self.match(self.title, "freelancer") and self.match(self.company, "freelancer"):
             return '비유효', '프리랜서'
         
-        if self.title in self.invalid_titles["unemployed"] or self.company in self.invalid_companies["unemployed"]:
+        if self.match(self.title, "unemployed") and self.match(self.company, "unemployed"):
             return '비유효', '무직'
         
         # TODO: 기타 비유효 로직 포함해야 함 
+
+
         for key in self.invalid_titles["misc"]: 
             if self.title == key: 
                 return '비유효', '기타 비유효'
@@ -122,14 +140,10 @@ class Classification:
         if self.ref_ae_bdr():
             return '유효', ''
         
-        '''
-        add free email logic 
-        # Free email
-        if domain in free_email_domains:
-        return '홀딩', 'Free email'
-        - 홀딩인데 직급, 회사이 정상적이면 유효 
-        
-        '''
+        if self.normalized_domain in self.invalid_domains["free-email"]:
+            if self.company.isalnum() and self.title.isalnum():
+                return '유효', ''
+            return '홀딩', 'Free email' 
         
         # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
         for key in self.valid_titles["academia"]:
@@ -138,57 +152,3 @@ class Classification:
                         
         return '유효', ''
     
-
-        '''
-        학교 소속 ‘교수', '학생', 'student', '대학생', '대학원생', '석사', '박사 연구원’ - quip
-        "학생", "student", "대학생", "대학원생", "석사", "학년" - ik
-
-        - 
-        Logic 
-
-        1. must validate if 
-
-            - record owner in AE & BDR 
-            - title is 대표, 사장, ceo, 팀장 && company is NOT in invalid-keywords: '기타 비유효'
-            - title is 교수, 연구원 && record owner is Yeji Yoon 
-
-
-        2. must invalidate if 
-
-            - 학교 소속     
-                - title is 학생, ALWAYS 
-                - company ends with 학교 or university && title is invalid-keywords: '학교 소속' (above title logic does not hold for yeji)
-            - 군인 
-                - title is 군인 
-            - 프리랜서 
-                - title or company is 'freelancer' or '프리랜서' 
-            - 무직 
-                - title or company is in invalid-keywords: '무직' 
-            - 에이전시 
-                - domain is in invalid-domains: 'agencies' 
-            - 경쟁사 
-                - domain (normalized) is in invalid-domains: 'competitors' or company is in 'competitors' 
-            - 기타 비유효 
-                - 
-            - domain is 
-                - invalid-domains: 'agencies', 'competitors'
-
-            - 불분명한 이름 및 회사명 
-                - company == 'company' or 'startup'
-                - 이름에 숫자 포함, 회사명 키워드 포함 
-            
-        3. 홀딩 if 
-            - 유효/비유효만 확실히 분류하고
-            - 인간이 review할 것도 홀딩으로 잘 분류해야 한다 - 목표 
-
-            - 기타 비유효 
-                - title or company == personal 
-            - 불분명한 이름 및 회사명 
-                -  name has digits
-            - 불분명한 eMail
-                - 도메인에 숫자 포함 또는 빈 값 
-            - 직책
-                - if title in invalid-keywords: 직책 
-            - Free email
-                - email is in invalid-domains: 'free-emails'
-        '''

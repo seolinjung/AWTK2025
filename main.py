@@ -54,7 +54,7 @@ def main(args):
 
     # create unique column - 
     # based on duplicate emails - 
-    # TODO: depends on how we handle cleansing duplicate emails from top 
+    #TODO: depends on how we handle cleansing duplicate emails from top 
     email_count = main_df_copy["Email"].value_counts()
     main_df_copy["unique"] = main_df_copy["Email"].map(email_count)
 
