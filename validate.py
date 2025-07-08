@@ -22,11 +22,11 @@ class Classification:
         self.normalized_domain = normalize_domain(self.domain)
 
         # list of the json arrays, retrieved
-        self.invalid_companies = self.retrieve_json("invalid-companies")
-        self.invalid_titles = self.retrieve_json("invalid-titles")
-        self.invalid_domains = self.retrieve_json("invalid-domains")
-        self.valid_titles = self.retrieve_json("valid-titles")
-        self.ae_bdr = self.retrieve_json("ae-bdr")
+        self.invalid_companies = retrieve_json("invalid-companies")
+        self.invalid_titles = retrieve_json("invalid-titles")
+        self.invalid_domains = retrieve_json("invalid-domains")
+        self.valid_titles = retrieve_json("valid-titles")
+        self.ae_bdr = retrieve_json("ae-bdr")
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -50,22 +50,24 @@ class Classification:
         
         return False
     
-    def match(self, type, value, category, valid="invalid"):
+    def match(self, value, category, valid="invalid"):
 
         lookup = [] 
+        item = ""
 
-        if value == self.title:
-            if valid == "valid":
-                lookup = self.valid_titles[category]
-            lookup = self.invalid_titles[category]
+        if value == "title":
+            item = self.title 
+            lookup = self.valid_titles[category] if valid == "valid" else self.invalid_titles[category]
 
-        if value == self.company:
+        if value == "company":
+            item = self.company 
             lookup = self.invalid_companies[category]
 
-        if value == self.domain or value == self.normalized_domain:
+        if "domain" in value:
+            item = self.domain 
             lookup = self.invalid_domains[category]
 
-        return any(k in value for k in lookup)
+        return any(k in item for k in lookup)
 
     # return the classification result 
     def classify(self):
@@ -74,55 +76,54 @@ class Classification:
         if self.title == "학생": 
             return '비유효', '학교 소속'
 
-        if self.match(self.domain, "agency"):
+        if self.match("domain", "agency"):
             return '비유효', '에이전시'
         
-        if self.match(self.title, "decision-maker", "valid") and not self.match(self.company, "misc"):
+        if self.match("title", "decision-maker", "valid") and not self.match("company", "misc"):
             return '유효', ''
         
-        if self.match(self.company, "academia") and self.match(self.title, "academia"):
+        if self.match("company", "academia") and self.match("title", "academia"):
             return '비유효', '학교 소속'
         
-        if self.match(self.title, "freelancer") and self.match(self.company, "freelancer"):
+        if self.match("title", "freelancer") and self.match("company", "freelancer"):
             return '비유효', '프리랜서'
         
-        if self.match(self.title, "unemployed") and self.match(self.company, "unemployed"):
+        if self.match("title", "unemployed") and self.match("company", "unemployed"):
             return '비유효', '무직'
         
         # TODO: 기타 비유효 로직 포함해야 함 
-        if self.match(self.title, "misc") or self.match(self.company, "misc") or self.company == "intern": 
+        if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
             return '비유효', '기타 비유효'
         
         if self.title == "personal" or self.company == "personal": 
             return '홀딩', '기타 비유효'
         
         # exception in match logic: domain must match exactly 
-        if self.normalized_domain in self.invalid_domains["competitor"] or self.match(self.company, "competitor"):
+        if self.normalized_domain in self.invalid_domains["competitor"] or self.match("company", "competitor"):
             return '비유효', '경쟁사'
         
-        # valid - record owner in AE & BDR 
         if self.ref_ae_bdr():
             return '유효', ''
-        
-        if self.match(self.company, "unspecified"): 
-            return '비유효', '불분명한 이름 및 회사명'
         
         if any(char.isdigit() for char in self.name):
             return '홀딩', '불분명한 이름 및 회사명'
         
+        if self.match("company", "unspecified"): 
+            return '비유효', '불분명한 이름 및 회사명'
+        
         if not self.domain: 
             return '비유효', '불분명한 e-mail'
         
-        if self.match(self.title, "occupation"):
+        if self.match("title", "occupation"):
             return '홀딩', '직책'
         
-        if self.match(self.normalized_domain, "free-email"): 
+        if self.match("normalized_domain", "free-email"): 
             if self.company.isalnum() and self.title.isalnum():
                 return '유효', ''
             return '홀딩', 'Free email' 
         
         # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
-        if self.match(self.title, "academia", "valid"):
+        if self.match("title", "academia", "valid"):
             if self.record_owner == "Yoon Yeji":
                 return '유효', ''
                         

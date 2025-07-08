@@ -25,6 +25,15 @@ def retrieve_json(input):
     with open(path, 'r') as file: 
         return json.load(file)[input]
 
+def retrieve_csv(args, input, seonhye=False):
+
+    db_root_path = ""
+
+    # define path to db root
+    db_root_path = os.path.join("raw_db", "org_db", "seonhye") if seonhye else os.path.join("raw_db", "org_db", args.date)
+        
+    return os.path.join(db_root_path, input + ".csv")
+
 def reverse_dict(dict):
 
     reversed = {}
