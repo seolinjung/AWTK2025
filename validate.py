@@ -1,7 +1,3 @@
-import re 
-import json 
-import os
-
 from helper import retrieve_json, normalize_domain
 
 class Classification:
