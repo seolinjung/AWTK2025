@@ -50,25 +50,29 @@ class Classification:
         
         return False
     
-    def match(self, value, category, valid="invalid"):
+    def match(self, value, category, valid="invalid", exact=False):
 
         lookup = [] 
         item = ""
 
-        if value == "title":
-            item = self.title 
-            lookup = self.valid_titles[category] if valid == "valid" else self.invalid_titles[category]
+        if not exact:
 
-        if value == "company":
-            item = self.company 
-            lookup = self.invalid_companies[category]
+            if value == "title":
+                item = self.title 
+                lookup = self.valid_titles[category] if valid == "valid" else self.invalid_titles[category]
 
-        if "domain" in value:
-            item = self.domain 
-            lookup = self.invalid_domains[category]
+            if value == "company":
+                item = self.company 
+                lookup = self.invalid_companies[category]
 
-        return any(k in item for k in lookup)
+            if "domain" in value:
+                item = self.domain 
+                lookup = self.invalid_domains[category]
 
+            return any(k in item for k in lookup)
+        
+        return any(k == item for k in lookup)
+    
     # return the classification result 
     def classify(self):
 
@@ -108,7 +112,7 @@ class Classification:
         if any(char.isdigit() for char in self.name):
             return '홀딩', '불분명한 이름 및 회사명'
         
-        if self.match("company", "unspecified"): 
+        if self.match("company", "unspecified", exact=True): 
             return '비유효', '불분명한 이름 및 회사명'
         
         if not self.domain: 

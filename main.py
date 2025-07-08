@@ -1,4 +1,6 @@
 import argparse
+import os
+
 import pandas as pd
 
 from manipulate_db import merge_db, cleanse_duplicate_emails
@@ -10,6 +12,15 @@ def apply_classification(row):
 
     classification = Classification(row)
     return classification.classify()
+
+def upload_db(args, db):
+
+    dest_path = os.path.join("raw_db", "org_db", args.date, "Integrated_DB.xlsx")
+
+    writer = pd.ExcelWriter(dest_path)
+    db.to_excel(writer)
+
+    writer.close()
     
 def main(args):
 
@@ -45,7 +56,6 @@ def main(args):
     main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(apply_classification, axis=1, result_type='expand')
 
     # 선혜님 덮어씌우는 단계 
-    
     seonhye_confirm_df = pd.read_csv(retrieve_csv(args, "seonhye_confirm", True))
 
     main_df_copy.set_index('Email', inplace=True)
@@ -59,6 +69,8 @@ def main(args):
 
     main_df_copy['MKT Review(유효/비유효/홀딩)'] = main_df_copy.apply(
         lambda row: '유효' if row['Email'] in sales_invite_emails else row['MKT Review(유효/비유효/홀딩)'], axis=1)
+
+    upload_db(args, main_df_copy)
 
     # 4-c logic - sales
     print(main_df_copy.head())
