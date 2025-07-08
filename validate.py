@@ -79,6 +79,11 @@ class Classification:
         # 필수? 
         if self.title == "학생": 
             return '비유효', '학교 소속'
+    
+        # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
+        if self.match("title", "academia", "valid"):
+            if self.record_owner == "Yoon Yeji":
+                return '유효', ''
 
         if self.match("domain", "agency"):
             return '비유효', '에이전시'
@@ -125,11 +130,6 @@ class Classification:
             if self.company.isalnum() and self.title.isalnum():
                 return '유효', ''
             return '홀딩', 'Free email' 
-        
-        # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
-        if self.match("title", "academia", "valid"):
-            if self.record_owner == "Yoon Yeji":
-                return '유효', ''
                         
         return '유효', ''
     
