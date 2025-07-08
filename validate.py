@@ -66,7 +66,7 @@ class Classification:
                 lookup = self.invalid_companies[category]
 
             if "domain" in value:
-                item = self.domain 
+                item = self.domain if value == "domain" else self.normalized_domain
                 lookup = self.invalid_domains[category]
 
             return any(k in item for k in lookup)
@@ -108,7 +108,7 @@ class Classification:
             return '홀딩', '기타 비유효'
         
         # exception in match logic: domain must match exactly 
-        if self.normalized_domain in self.invalid_domains["competitor"] or self.match("company", "competitor"):
+        if self.match("normalized_domain", "competitor", exact=True) or self.match("company", "competitor"):
             return '비유효', '경쟁사'
         
         if self.ref_ae_bdr():
