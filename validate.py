@@ -50,7 +50,7 @@ class Classification:
         
         return False
     
-    def match(self, type, value, category, valid="valid"):
+    def match(self, type, value, category, valid="invalid"):
 
         lookup = [] 
 
