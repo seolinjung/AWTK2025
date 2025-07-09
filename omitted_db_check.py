@@ -66,3 +66,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(default_date=args.date)
+
+def main():
+    while True:
+        print("\n📌 이메일 비교를 시작합니다.")
+        folder_date = input("0. 어느 날짜의 폴더를 확인하시겠습니까? (예: 20240701)\n> ").strip()
+        file1_input = input("1. 어떤 파일에만 있는 email 목록을 확인하고 싶나요? (확장자 제외)\n예시: file1\n> ").strip()
+        file2_input = input("2. 어떤 파일과 비교할까요? (확장자 제외)\n예시: file2\n> ").strip()
+
+        compare_emails(folder_date, file1_input, file2_input)
+
+        again = input("4. 다른 파일을 확인하시겠습니까? (yes/no)\n> ").strip().lower()
+        if again != 'yes':
+            print("👋 이메일 비교를 종료합니다.")
+            break
+
+if __name__ == "__main__":
+    main()

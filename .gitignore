@@ -1,4 +1,13 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+
+.vscode
+.venv
+
+__pycache__
+
 raw_db
+data
+
+temp.py
