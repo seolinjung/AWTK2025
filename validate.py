@@ -1,3 +1,5 @@
+import re
+
 from helper import retrieve_json, normalize_domain
 
 class Classification:
@@ -14,13 +16,12 @@ class Classification:
         self.name = self.first_name + self.last_name
         self.record_owner = str(row['Related Record Owner']).strip()
 
-        # normalized domain
         self.normalized_domain = normalize_domain(self.domain)
 
-        # list of the json arrays, retrieved
         self.invalid_companies = retrieve_json("invalid-companies")
         self.invalid_titles = retrieve_json("invalid-titles")
         self.invalid_domains = retrieve_json("invalid-domains")
+        self.valid_companies = retrieve_json("valid-companies")
         self.valid_titles = retrieve_json("valid-titles")
         self.ae_bdr = retrieve_json("ae-bdr")
 
@@ -59,7 +60,7 @@ class Classification:
 
             if value == "company":
                 item = self.company 
-                lookup = self.invalid_companies[category]
+                lookup = self.valid_companies[category] if valid == "valid" else self.invalid_companies[category]
 
             if "domain" in value:
                 item = self.domain if value == "domain" else self.normalized_domain
@@ -68,6 +69,12 @@ class Classification:
             return any(k in item for k in lookup)
         
         return any(k == item for k in lookup)
+    
+    def includes_special(self, input):
+
+        rule = re.compile("[@_!#$%^&*()<>?/\|}{~:]")
+
+        return True if rule.search(input) else False
     
     # return the classification result 
     def classify(self):
@@ -78,6 +85,7 @@ class Classification:
     
         # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
         if self.match("title", "academia", "valid"):
+            # 
             if self.record_owner == "Yoon Yeji":
                 return '유효', ''
 
@@ -123,7 +131,9 @@ class Classification:
             return '홀딩', '직책'
         
         if self.match("normalized_domain", "free-email"): 
-            if self.company.isalnum() and self.title.isalnum():
+            if self.match("company", "suffix", "valid"):
+                return '유효', ''
+            if not self.includes_special(self.company):
                 return '유효', ''
             return '홀딩', 'Free email' 
                         

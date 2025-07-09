@@ -31,8 +31,11 @@ def retrieve_csv(args, input, seonhye=False):
 
     # define path to db root
     db_root_path = os.path.join("raw_db", "org_db", "seonhye") if seonhye else os.path.join("raw_db", "org_db", args.date)
-        
-    return os.path.join(db_root_path, input + ".csv")
+    
+    if db_root_path.exists(): 
+        return os.path.join(db_root_path, input + ".csv")
+    
+    return False
 
 def reverse_dict(dict):
 
