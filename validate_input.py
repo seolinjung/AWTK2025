@@ -2,9 +2,9 @@ import re
 import os
 import pandas as pd
 
-from helper import retrieve_json, normalize_domain
+from helper import retrieve_json, normalize_domain, retrieve_csv
 
-class Classification:
+class ValidateInput:
 
     def __init__(self, args, row):
 
@@ -29,14 +29,15 @@ class Classification:
         self.valid_titles = retrieve_json("valid-titles")
         self.ae_bdr = retrieve_json("ae-bdr")
 
-    def sales_invite(self):
-        
-        sales_invite_path = os.path.join("raw_db", "org_db", self.args.date, "sales_invite.csv")
+        self.sales_invite_path = retrieve_csv(self.args, "sales_invite")
+        self.seonhye_confirm_path = retrieve_csv(self.args, "seonhye_confirm", True)
 
-        if os.path.exists(sales_invite_path):
-            sales_invite_df = pd.read_csv(sales_invite_path)
-            sales_invite_emails = set(sales_invite_df['Email'])
-            if self.email in sales_invite_emails:
+    def overwrite_candidate(self, path):
+
+        if os.path.exists(path): 
+            df = pd.read_csv(path)
+            selected_emails = set(df['Email'])
+            if self.email in selected_emails: 
                 return True
             return False
         return False
@@ -94,18 +95,13 @@ class Classification:
     
     # return the classification result 
     def classify(self):
-
-        if self.sales_invite():
-            return '유효', 'Sales Invite'
         
         # 필수? 
         if self.title == "학생": 
             return '비유효', '학교 소속'
     
-        if self.match("title", "academia", "valid"):
-            # 
-            if self.record_owner == "Yoon Yeji":
-                return '유효', ''
+        if self.match("title", "academia", "valid") and self.record_owner == "Yoon Yeji":
+            return '유효', ''
 
         if self.match("domain", "agency"):
             return '비유효', '에이전시'
@@ -154,6 +150,12 @@ class Classification:
             if not self.includes_special(self.company):
                 return '유효', ''
             return '홀딩', 'Free e-mail' 
+
+        if self.overwrite_candidate(self.seonhye_confirm_path):
+            return '대상 아님 - 직원', ''
+        
+        if self.overwrite_candidate(self.sales_invite_path):
+            return '유효', 'Sales Invite'
                         
         return '유효', ''
     
