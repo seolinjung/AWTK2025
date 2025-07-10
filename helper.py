@@ -30,7 +30,7 @@ def retrieve_csv(args, input, seonhye=False):
 
     db_root_path = ""
 
-    db_root_path = os.path.join("raw_db", "org_db", "seonhye") if seonhye else os.path.join("raw_db", "org_db", args.date)
+    db_root_path = os.path.join("raw_db", "seonhye") if seonhye else os.path.join("raw_db", "org_db", args.date)
     
     if os.path.exists(db_root_path): 
         return os.path.join(db_root_path, input + ".csv")
