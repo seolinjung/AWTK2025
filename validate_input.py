@@ -1,8 +1,14 @@
-from helper import retrieve_json, normalize_domain
+import re
+import os
+import pandas as pd
 
-class Classification:
+from helper import retrieve_json, normalize_domain, retrieve_csv
 
-    def __init__(self, row):
+class ValidateInput:
+
+    def __init__(self, args, row):
+
+        self.args = args
 
         # define all the major column values 
         self.title = str(row['Title']).lower()
@@ -14,15 +20,27 @@ class Classification:
         self.name = self.first_name + self.last_name
         self.record_owner = str(row['Related Record Owner']).strip()
 
-        # normalized domain
         self.normalized_domain = normalize_domain(self.domain)
 
-        # list of the json arrays, retrieved
         self.invalid_companies = retrieve_json("invalid-companies")
         self.invalid_titles = retrieve_json("invalid-titles")
         self.invalid_domains = retrieve_json("invalid-domains")
+        self.valid_companies = retrieve_json("valid-companies")
         self.valid_titles = retrieve_json("valid-titles")
         self.ae_bdr = retrieve_json("ae-bdr")
+
+        self.sales_invite_path = retrieve_csv(self.args, "sales_invite")
+        self.seonhye_confirm_path = retrieve_csv(self.args, "seonhye_confirm", True)
+
+    def overwrite_candidate(self, path):
+
+        if os.path.exists(path): 
+            df = pd.read_csv(path)
+            selected_emails = set(df['Email'])
+            if self.email in selected_emails: 
+                return True
+            return False
+        return False
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -59,7 +77,7 @@ class Classification:
 
             if value == "company":
                 item = self.company 
-                lookup = self.invalid_companies[category]
+                lookup = self.valid_companies[category] if valid == "valid" else self.invalid_companies[category]
 
             if "domain" in value:
                 item = self.domain if value == "domain" else self.normalized_domain
@@ -69,17 +87,21 @@ class Classification:
         
         return any(k == item for k in lookup)
     
+    def includes_special(self, input):
+
+        rule = re.compile("[@_!#$%^&*()<>?/|}{~:]")
+
+        return True if rule.search(input) else False
+    
     # return the classification result 
     def classify(self):
-
+        
         # 필수? 
         if self.title == "학생": 
             return '비유효', '학교 소속'
     
-        # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
-        if self.match("title", "academia", "valid"):
-            if self.record_owner == "Yoon Yeji":
-                return '유효', ''
+        if self.match("title", "academia", "valid") and self.record_owner == "Yoon Yeji":
+            return '유효', ''
 
         if self.match("domain", "agency"):
             return '비유효', '에이전시'
@@ -123,9 +145,17 @@ class Classification:
             return '홀딩', '직책'
         
         if self.match("normalized_domain", "free-email"): 
-            if self.company.isalnum() and self.title.isalnum():
+            if self.match("company", "suffix", "valid"):
                 return '유효', ''
-            return '홀딩', 'Free email' 
+            if not self.includes_special(self.company):
+                return '유효', ''
+            return '홀딩', 'Free e-mail' 
+
+        if self.overwrite_candidate(self.seonhye_confirm_path):
+            return '대상 아님 - 직원', ''
+        
+        if self.overwrite_candidate(self.sales_invite_path):
+            return '유효', 'Sales Invite'
                         
         return '유효', ''
     
