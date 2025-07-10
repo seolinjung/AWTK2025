@@ -10,7 +10,7 @@ from validate import Classification
 
 def apply_classification(row): 
 
-    classification = Classification(row)
+    classification = Classification(args, row)
     return classification.classify()
 
 def upload_db(args, db):
@@ -35,7 +35,7 @@ def main(args):
     sdr_confirm_emails = set(sdr_confirm_df['Email'])
 
     main_df_copy["SDR 컨펌 여부"] = main_df_copy.apply(
-        lambda row: sdr_confirm_emails["SDR 컨펌 여부"] if row["Email"] in sdr_confirm_emails else '', axis=1)
+        lambda row: '예' if row["Email"] in sdr_confirm_emails else '', axis=1)
 
     confirm_mail_df = pd.read_csv(retrieve_csv(args, "confirm_mail"))
     main_df_copy = merge_db(main_df_copy, confirm_mail_df, "Email")
@@ -49,14 +49,6 @@ def main(args):
     # TODO: depends on how we handle cleansing duplicate emails from top 
     email_count = main_df_copy["Email"].value_counts()
     main_df_copy["unique"] = main_df_copy["Email"].map(email_count)
-    
-    sales_invite_df = pd.read_csv(retrieve_csv(args, "sales_invite"))
-
-    if sales_invite_df: 
-        sales_invite_emails = set(sales_invite_df['Email'])
-        main_df_copy['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)'] = main_df_copy.apply(
-            lambda row: '유효', 'Sales Invite' if row['Email'] in sales_invite_emails else '', axis=1)
-
 
     # apply classification
     main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(apply_classification, axis=1, result_type='expand')
@@ -69,9 +61,6 @@ def main(args):
 
     main_df_copy.update(seonhye_confirm_df[['MKT Review(유효/비유효/홀딩)']])
     main_df_copy.reset_index(inplace=True)
-
-    main_df_copy['MKT Review(유효/비유효/홀딩)'] = main_df_copy.apply(
-        lambda row: '유효' if row['Email'] in sales_invite_emails else row['MKT Review(유효/비유효/홀딩)'], axis=1)
 
     upload_db(args, main_df_copy)
 

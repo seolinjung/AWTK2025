@@ -1,10 +1,14 @@
 import re
+import os
+import pandas as pd
 
 from helper import retrieve_json, normalize_domain
 
 class Classification:
 
-    def __init__(self, row):
+    def __init__(self, args, row):
+
+        self.args = args
 
         # define all the major column values 
         self.title = str(row['Title']).lower()
@@ -24,6 +28,18 @@ class Classification:
         self.valid_companies = retrieve_json("valid-companies")
         self.valid_titles = retrieve_json("valid-titles")
         self.ae_bdr = retrieve_json("ae-bdr")
+
+    def sales_invite(self):
+        
+        sales_invite_path = os.path.join("raw_db", "org_db", self.args.date, "sales_invite.csv")
+
+        if os.path.exists(sales_invite_path):
+            sales_invite_df = pd.read_csv(sales_invite_path)
+            sales_invite_emails = set(sales_invite_df['Email'])
+            if self.email in sales_invite_emails:
+                return True
+            return False
+        return False
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -72,18 +88,20 @@ class Classification:
     
     def includes_special(self, input):
 
-        rule = re.compile("[@_!#$%^&*()<>?/\|}{~:]")
+        rule = re.compile("[@_!#$%^&*()<>?/|}{~:]")
 
         return True if rule.search(input) else False
     
     # return the classification result 
     def classify(self):
 
+        if self.sales_invite():
+            return '유효', 'Sales Invite'
+        
         # 필수? 
         if self.title == "학생": 
             return '비유효', '학교 소속'
     
-        # valid - title is 교수, 연구원 && record owner is Yeji Yoon 
         if self.match("title", "academia", "valid"):
             # 
             if self.record_owner == "Yoon Yeji":
@@ -135,7 +153,7 @@ class Classification:
                 return '유효', ''
             if not self.includes_special(self.company):
                 return '유효', ''
-            return '홀딩', 'Free email' 
+            return '홀딩', 'Free e-mail' 
                         
         return '유효', ''
     
