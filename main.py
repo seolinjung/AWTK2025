@@ -7,10 +7,22 @@ from helper import extract_domain, retrieve_csv
 
 from validate_input import ValidateInput
 
-def apply_classification(row): 
+def default_classify(row): 
 
     validation = ValidateInput(args, row)
+
     return validation.classify()
+    
+def seonhye_classify(row):
+
+    validation = ValidateInput(args, row)
+
+    return validation.overwrite_seonhye()
+
+def sales_classify(row):
+    
+    validation = ValidateInput(args, row)
+    return validation.overwrite_sales()
 
 def upload_db(args, db):
 
@@ -19,7 +31,7 @@ def upload_db(args, db):
     writer = pd.ExcelWriter(dest_path)
     db.to_excel(writer)
 
-    writer.close()
+    writer.close()    
 
 def main(args):
 
@@ -31,8 +43,8 @@ def main(args):
     # and make a copy of main
     main_df_copy = main_df.copy()
 
-    if os.path.exists(sdr_confirm_path): # if exists
-        sdr_confirm_df = pd.read_csv(retrieve_csv(args, "sdr_confirm"))
+    if sdr_confirm_path: # if exists
+        sdr_confirm_df = pd.read_csv(sdr_confirm_path)
         # merge based on commonality of emails 
         main_df_copy = main_df_copy.merge(sdr_confirm_df, on="Email", how="left")
 
@@ -42,8 +54,8 @@ def main(args):
         main_df_copy["SDR 컨펌 여부"] = main_df_copy.apply(
             lambda row: '예' if row["Email"] in sdr_confirm_emails else '', axis=1)
 
-    if os.path.exists(confirm_mail_path): 
-        confirm_mail_df = pd.read_csv(retrieve_csv(args, "confirm_mail"))
+    if confirm_mail_path: 
+        confirm_mail_df = pd.read_csv(confirm_mail_path)
         main_df_copy = main_df_copy.merge(confirm_mail_df, on="Email", how="left")
 
     # keep last updated version of email, drop rest 
@@ -56,10 +68,13 @@ def main(args):
     email_count = main_df_copy["Email"].value_counts()
     main_df_copy["unique"] = main_df_copy["Email"].map(email_count)
 
-    # apply classification
-    main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(apply_classification, axis=1, result_type='expand')
+    main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(default_classify, axis=1, result_type='expand')
+    main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(seonhye_classify, axis=1, result_type='expand')
+    main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(sales_classify, axis=1, result_type='expand')
 
-    main_df_copy.reset_index(inplace=True)
+    # 파일 review - get value of MKT 
+
+    main_df_copy.reset_index(inplace=True, drop=True)
     
     # upload db to excel file 
     upload_db(args, main_df_copy)
