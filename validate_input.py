@@ -1,5 +1,4 @@
 import re
-import os
 import pandas as pd
 
 from helper import retrieve_json, normalize_domain, retrieve_csv
@@ -163,12 +162,10 @@ class ValidateInput:
         seonhye_row = self.lookup_email(self.seonhye_confirm_df)
         if not seonhye_row.empty:
             return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
-        
         return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]
 
     def overwrite_sales(self):
 
         if not self.lookup_email(self.sales_invite_df).empty: 
             return '유효', 'Sales Invite' 
-        
         return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]

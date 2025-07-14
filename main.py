@@ -7,28 +7,26 @@ from helper import extract_domain, retrieve_csv
 
 from validate_input import ValidateInput
 
-def default_classify(row): 
+def apply_classification(row, mode="default"): 
 
     validation = ValidateInput(args, row)
+
+    if mode=="seonhye":
+        return validation.overwrite_seonhye()
+
+    if mode=="sales":
+        return validation.overwrite_sales()
 
     return validation.classify()
     
-def seonhye_classify(row):
-
-    validation = ValidateInput(args, row)
-
-    return validation.overwrite_seonhye()
-
-def sales_classify(row):
-    
-    validation = ValidateInput(args, row)
-    return validation.overwrite_sales()
-
 def upload_db(args, db):
 
-    dest_path = os.path.join("raw_db", "org_db", args.date, "Integrated_DB.xlsx")
+    dest_path = os.path.join("data", args.date)
 
-    writer = pd.ExcelWriter(dest_path)
+    if not os.path.exists(dest_path):
+        os.mkdir(dest_path)
+
+    writer = pd.ExcelWriter(os.path.join(dest_path, "Sorted_DB.xlsx"))
     db.to_excel(writer)
 
     writer.close()    
@@ -68,12 +66,18 @@ def main(args):
     email_count = main_df_copy["Email"].value_counts()
     main_df_copy["unique"] = main_df_copy["Email"].map(email_count)
 
-    main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(default_classify, axis=1, result_type='expand')
-    main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(seonhye_classify, axis=1, result_type='expand')
-    main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(sales_classify, axis=1, result_type='expand')
+    steps = ["default"]
 
-    # 파일 review - get value of MKT 
+    if retrieve_csv(args, "seonhye_confirm", True):
+        steps.append("seonhye")
 
+    if retrieve_csv(args, "sales_invite"):
+        steps.append("sales")
+
+    for step in steps: 
+        main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(
+            lambda row: apply_classification(row, step), axis=1, result_type='expand')
+   
     main_df_copy.reset_index(inplace=True, drop=True)
     
     # upload db to excel file 
