@@ -1,5 +1,4 @@
 import re
-import os
 import pandas as pd
 
 from helper import retrieve_json, normalize_domain, retrieve_csv
@@ -9,6 +8,7 @@ class ValidateInput:
     def __init__(self, args, row):
 
         self.args = args
+        self.row = row 
 
         # define all the major column values 
         self.title = str(row['Title']).lower()
@@ -29,18 +29,20 @@ class ValidateInput:
         self.valid_titles = retrieve_json("valid-titles")
         self.ae_bdr = retrieve_json("ae-bdr")
 
-        self.sales_invite_path = retrieve_csv(self.args, "sales_invite")
-        self.seonhye_confirm_path = retrieve_csv(self.args, "seonhye_confirm", True)
+        self.seonhye_confirm_path = retrieve_csv(args, "seonhye_confirm", True)
+        self.seonhye_confirm_df = pd.read_csv(self.seonhye_confirm_path) if self.seonhye_confirm_path else False 
 
-    def overwrite_candidate(self, path):
+        self.sales_invite_path = retrieve_csv(args, "sales_invite")
+        self.sales_invite_df = pd.read_csv(self.sales_invite_path) if self.sales_invite_path else False 
 
-        if os.path.exists(path): 
-            df = pd.read_csv(path)
+    def lookup_email(self, df):
+        
+        if df is not None: 
             selected_emails = set(df['Email'])
-            if self.email in selected_emails: 
-                return True
-            return False
-        return False
+            if self.email in selected_emails:
+                return df[df['Email'] == self.email].iloc[0]
+            return pd.DataFrame()
+        return pd.DataFrame()
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -109,13 +111,13 @@ class ValidateInput:
         if self.match("title", "decision-maker", "valid") and not self.match("company", "misc"):
             return '유효', ''
         
-        if self.match("company", "academia") and self.match("title", "academia"):
+        if self.match("company", "academia") or self.match("title", "academia"):
             return '비유효', '학교 소속'
         
-        if self.match("title", "freelancer") and self.match("company", "freelancer"):
+        if self.match("title", "freelancer") or self.match("company", "freelancer"):
             return '비유효', '프리랜서'
         
-        if self.match("title", "unemployed") and self.match("company", "unemployed"):
+        if self.match("title", "unemployed") or self.match("company", "unemployed"):
             return '비유효', '무직'
         
         # TODO: 기타 비유효 로직 포함해야 함 
@@ -145,17 +147,25 @@ class ValidateInput:
             return '홀딩', '직책'
         
         if self.match("normalized_domain", "free-email"): 
+            #TODO: add "related record owner = ae-bdr" 
+            #TODO: invalid-record-owners
             if self.match("company", "suffix", "valid"):
                 return '유효', ''
             if not self.includes_special(self.company):
                 return '유효', ''
             return '홀딩', 'Free e-mail' 
-
-        if self.overwrite_candidate(self.seonhye_confirm_path):
-            return '대상 아님 - 직원', ''
-        
-        if self.overwrite_candidate(self.sales_invite_path):
-            return '유효', 'Sales Invite'
                         
         return '유효', ''
     
+    def overwrite_seonhye(self): 
+
+        seonhye_row = self.lookup_email(self.seonhye_confirm_df)
+        if not seonhye_row.empty:
+            return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
+        return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]
+
+    def overwrite_sales(self):
+
+        if not self.lookup_email(self.sales_invite_df).empty: 
+            return '유효', 'Sales Invite' 
+        return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]
