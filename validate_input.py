@@ -53,15 +53,14 @@ class ValidateInput:
 
         # "Hong Gil Dong" or "Gil Dong Hong"
         if len(record_owner_arr) == 3:
-            # gil dong hong -> hong gil dong
+            # intl -> korean 
             alt_orders.append(" ".join([record_owner_arr[2], record_owner_arr[0], record_owner_arr[1]]))
-            # hong gil dong -> gil dong hong 
+            # korean -> intl
             alt_orders.append(" ".join([record_owner_arr[1], record_owner_arr[2], record_owner_arr[0]]))
 
         # "Hong Gildong" or "Gildong Hong"
         if len(record_owner_arr) == 2:
-            alt_order = " ".join([record_owner_arr[1], record_owner_arr[0]])
-            alt_orders.append(alt_order)
+            alt_orders.append(" ".join([record_owner_arr[1], record_owner_arr[0]]))
 
         # if the name matches ae bdr list 
         for order in alt_orders: 
