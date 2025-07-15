@@ -37,7 +37,8 @@ def main(args):
     # read main file 
     main_df = pd.read_csv(
         retrieve_csv(args, "main"),
-        usecols=["First Name", "Last Name", "Email", "Company (Custom)", "Title", "Related Record Owner"])
+        usecols=["First Name", "Last Name", "Email", "Company (Custom)", "Title", "Related Record Owner"],
+        index_col=False)
     
     # and make a copy of main
     main_df_copy = main_df.copy()
@@ -78,7 +79,7 @@ def main(args):
         main_df_copy[['MKT Review(유효/비유효/홀딩)', 'MKT Review(사유)']] = main_df_copy.apply(
             lambda row: apply_classification(row, step), axis=1, result_type='expand')
    
-    # main_df_copy.reset_index(inplace=True, drop=True)
+    main_df_copy.reset_index(inplace=True, drop=True)
     
     # upload db to excel file 
     upload_db(args, main_df_copy)
