@@ -23,6 +23,7 @@ class ValidateInput:
 
         self.invalid_companies = retrieve_json("invalid-companies")
         self.invalid_titles = retrieve_json("invalid-titles")
+        self.invalid_record_owners = retrieve_json("invalid-record-owners")
         self.invalid_domains = retrieve_json("invalid-domains")
         self.valid_companies = retrieve_json("valid-companies")
         self.valid_titles = retrieve_json("valid-titles")
@@ -84,6 +85,10 @@ class ValidateInput:
                 item = self.company 
                 lookup = self.valid_companies[category] if valid == "valid" else self.invalid_companies[category]
 
+            if value == "record_owner":
+                item = self.record_owner
+                lookup = self.invalid_record_owners
+
             if "domain" in value:
                 item = self.domain if value == "domain" else self.normalized_domain
                 lookup = self.invalid_domains[category]
@@ -100,13 +105,13 @@ class ValidateInput:
             return '비유효', '학교 소속'
     
         if self.match("title", "academia", "valid") and self.record_owner == "Yoon Yeji":
-            return '유효', ''
+            return '유효', 'academia'
 
         if self.match("domain", "agency"):
             return '비유효', '에이전시'
         
         if self.match("title", "decision-maker", "valid") and not self.match("company", "misc"):
-            return '유효', ''
+            return '유효', 'decision maker'
         
         if self.match("company", "academia") or self.match("title", "academia"):
             return '비유효', '학교 소속'
@@ -145,11 +150,13 @@ class ValidateInput:
         
         if self.match("normalized_domain", "free-email"): 
             #TODO: add "related record owner = ae-bdr" 
+            if self.match("record_owner", ""):
+                return '비유효', 'Invalid Record Owner'
             #TODO: invalid-record-owners
             if self.match("company", "suffix", "valid"):
-                return '유효', ''
+                return '유효', 'valid suffix'
             if not includes_special(self.company):
-                return '유효', ''
+                return '유효', 'no special chars'
             return '홀딩', 'Free e-mail' 
                         
         return '유효', ''
