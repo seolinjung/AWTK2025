@@ -1,6 +1,13 @@
 import pandas as pd 
 import os
 import json
+import re
+
+def includes_special(input):
+
+    rule = re.compile("[@_!#$%^&*()<>?/|}{~:]")
+
+    return True if rule.search(input) else False
 
 def extract_domain(email):
     if pd.isna(email) or "@" not in str(email):

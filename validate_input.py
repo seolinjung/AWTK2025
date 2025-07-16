@@ -1,7 +1,6 @@
-import re
 import pandas as pd
 
-from helper import retrieve_json, normalize_domain, retrieve_csv
+from helper import retrieve_json, normalize_domain, retrieve_csv, includes_special
 
 class ValidateInput:
 
@@ -24,6 +23,7 @@ class ValidateInput:
 
         self.invalid_companies = retrieve_json("invalid-companies")
         self.invalid_titles = retrieve_json("invalid-titles")
+        self.invalid_record_owners = retrieve_json("invalid-record-owners")
         self.invalid_domains = retrieve_json("invalid-domains")
         self.valid_companies = retrieve_json("valid-companies")
         self.valid_titles = retrieve_json("valid-titles")
@@ -50,19 +50,23 @@ class ValidateInput:
         # make it into an array for deconstructing
         record_owner_arr = self.record_owner.split()
 
-        alt_order = ""
+        alt_orders = [self.record_owner]
 
         # "Hong Gil Dong" or "Gil Dong Hong"
         if len(record_owner_arr) == 3:
-            alt_order = " ".join([self.record_owner[2], self.record_owner[0], self.record_owner[1]])
+            # intl -> korean 
+            alt_orders.append(" ".join([record_owner_arr[2], record_owner_arr[0], record_owner_arr[1]]))
+            # korean -> intl
+            alt_orders.append(" ".join([record_owner_arr[1], record_owner_arr[2], record_owner_arr[0]]))
 
         # "Hong Gildong" or "Gildong Hong"
         if len(record_owner_arr) == 2:
-            alt_order = " ".join([self.record_owner[1], self.record_owner[0]])
+            alt_orders.append(" ".join([record_owner_arr[1], record_owner_arr[0]]))
 
         # if the name matches ae bdr list 
-        if record_owner_arr in self.ae_bdr or alt_order in self.ae_bdr: 
-            return True
+        for order in alt_orders: 
+            if order in self.ae_bdr:
+                return True
         
         return False
     
@@ -81,6 +85,10 @@ class ValidateInput:
                 item = self.company 
                 lookup = self.valid_companies[category] if valid == "valid" else self.invalid_companies[category]
 
+            if value == "record_owner":
+                item = self.record_owner
+                lookup = self.invalid_record_owners
+
             if "domain" in value:
                 item = self.domain if value == "domain" else self.normalized_domain
                 lookup = self.invalid_domains[category]
@@ -88,12 +96,6 @@ class ValidateInput:
             return any(k in item for k in lookup)
         
         return any(k == item for k in lookup)
-    
-    def includes_special(self, input):
-
-        rule = re.compile("[@_!#$%^&*()<>?/|}{~:]")
-
-        return True if rule.search(input) else False
     
     # return the classification result 
     def classify(self):
@@ -103,13 +105,13 @@ class ValidateInput:
             return '비유효', '학교 소속'
     
         if self.match("title", "academia", "valid") and self.record_owner == "Yoon Yeji":
-            return '유효', ''
+            return '유효', 'academia'
 
         if self.match("domain", "agency"):
             return '비유효', '에이전시'
         
         if self.match("title", "decision-maker", "valid") and not self.match("company", "misc"):
-            return '유효', ''
+            return '유효', 'decision maker'
         
         if self.match("company", "academia") or self.match("title", "academia"):
             return '비유효', '학교 소속'
@@ -132,7 +134,7 @@ class ValidateInput:
             return '비유효', '경쟁사'
         
         if self.ref_ae_bdr():
-            return '유효', ''
+            return '유효', 'ae-bdr'
         
         if any(char.isdigit() for char in self.name):
             return '홀딩', '불분명한 이름 및 회사명'
@@ -148,11 +150,13 @@ class ValidateInput:
         
         if self.match("normalized_domain", "free-email"): 
             #TODO: add "related record owner = ae-bdr" 
+            if self.match("record_owner", ""):
+                return '비유효', 'Invalid Record Owner'
             #TODO: invalid-record-owners
             if self.match("company", "suffix", "valid"):
-                return '유효', ''
-            if not self.includes_special(self.company):
-                return '유효', ''
+                return '유효', 'valid suffix'
+            if not includes_special(self.company):
+                return '유효', 'no special chars'
             return '홀딩', 'Free e-mail' 
                         
         return '유효', ''
@@ -160,6 +164,7 @@ class ValidateInput:
     def overwrite_seonhye(self): 
 
         seonhye_row = self.lookup_email(self.seonhye_confirm_df)
+
         if not seonhye_row.empty:
             return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
         return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]
