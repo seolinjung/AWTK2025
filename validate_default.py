@@ -1,8 +1,8 @@
 import pandas as pd
+import helper
+from validate_email import ValidateEmail
 
-from helper import retrieve_json, normalize_domain, retrieve_csv, includes_special
-
-class ValidateInput:
+class Validate:
 
     def __init__(self, args, row):
 
@@ -19,30 +19,15 @@ class ValidateInput:
         self.name = self.first_name + self.last_name
         self.record_owner = str(row['Related Record Owner']).strip()
 
-        self.normalized_domain = normalize_domain(self.domain)
+        self.invalid_companies = helper.retrieve_json("invalid-companies")
+        self.invalid_titles = helper.retrieve_json("invalid-titles")
+        self.invalid_record_owners = helper.retrieve_json("invalid-record-owners")
+        self.invalid_domains = helper.retrieve_json("invalid-domains")
+        self.valid_companies = helper.retrieve_json("valid-companies")
+        self.valid_titles = helper.retrieve_json("valid-titles")
+        self.ae_bdr = helper.retrieve_json("ae-bdr")
 
-        self.invalid_companies = retrieve_json("invalid-companies")
-        self.invalid_titles = retrieve_json("invalid-titles")
-        self.invalid_record_owners = retrieve_json("invalid-record-owners")
-        self.invalid_domains = retrieve_json("invalid-domains")
-        self.valid_companies = retrieve_json("valid-companies")
-        self.valid_titles = retrieve_json("valid-titles")
-        self.ae_bdr = retrieve_json("ae-bdr")
-
-        self.seonhye_confirm_path = retrieve_csv(args, "seonhye_confirm", True)
-        self.seonhye_confirm_df = pd.read_csv(self.seonhye_confirm_path) if self.seonhye_confirm_path else False 
-
-        self.sales_invite_path = retrieve_csv(args, "sales_invite")
-        self.sales_invite_df = pd.read_csv(self.sales_invite_path) if self.sales_invite_path else False 
-
-    def lookup_email(self, df):
-        
-        if df is not None: 
-            selected_emails = set(df['Email'])
-            if self.email in selected_emails:
-                return df[df['Email'] == self.email].iloc[0]
-            return pd.DataFrame()
-        return pd.DataFrame()
+        self.email_logic = ValidateEmail(row)
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -90,16 +75,26 @@ class ValidateInput:
                 lookup = self.invalid_record_owners
 
             if "domain" in value:
-                item = self.domain if value == "domain" else self.normalized_domain
+                item = self.domain if value == "domain" else self.email_logic.normalized_domain
                 lookup = self.invalid_domains[category]
 
             return any(k in item for k in lookup)
         
         return any(k == item for k in lookup)
     
+    def filter_decision_maker(self): 
+
+        if self.email_logic.is_free(self.email): 
+            return '홀딩', 'decision maker: free e-mail'
+        
+        if self.match("company", "misc"): 
+            return '홀딩', 'decision maker: misc company'
+        
+        return '유효', 'deciison maker'
+    
     # return the classification result 
     def classify(self):
-        
+
         # 필수? 
         if self.title == "학생": 
             return '비유효', '학교 소속'
@@ -110,8 +105,7 @@ class ValidateInput:
         if self.match("domain", "agency"):
             return '비유효', '에이전시'
         
-        if self.match("title", "decision-maker", "valid") and not self.match("company", "misc"):
-            return '유효', 'decision maker'
+        self.filter_decision_maker()
         
         if self.match("company", "academia") or self.match("title", "academia"):
             return '비유효', '학교 소속'
@@ -125,9 +119,6 @@ class ValidateInput:
         # TODO: 기타 비유효 로직 포함해야 함 
         if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
             return '비유효', '기타 비유효'
-        
-        if self.title == "personal" or self.company == "personal": 
-            return '홀딩', '기타 비유효'
         
         # exception in match logic: domain must match exactly 
         if self.match("normalized_domain", "competitor", exact=True) or self.match("company", "competitor"):
@@ -148,29 +139,7 @@ class ValidateInput:
         if self.match("title", "occupation"):
             return '홀딩', '직책'
         
-        if self.match("normalized_domain", "free-email"): 
-            #TODO: add "related record owner = ae-bdr" 
-            if self.match("record_owner", ""):
-                return '비유효', 'Invalid Record Owner'
-            #TODO: invalid-record-owners
-            if self.match("company", "suffix", "valid"):
-                return '유효', 'valid suffix'
-            if not includes_special(self.company):
-                return '유효', 'no special chars'
-            return '홀딩', 'Free e-mail' 
+        self.email_logic.filter_free_email()
                         
         return '유효', ''
     
-    def overwrite_seonhye(self): 
-
-        seonhye_row = self.lookup_email(self.seonhye_confirm_df)
-
-        if not seonhye_row.empty:
-            return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
-        return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]
-
-    def overwrite_sales(self):
-
-        if not self.lookup_email(self.sales_invite_df).empty: 
-            return '유효', 'Sales Invite' 
-        return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]

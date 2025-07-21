@@ -3,19 +3,21 @@ import os
 import pandas as pd
 
 from helper import extract_domain, retrieve_csv
-from validate_input import ValidateInput
+from validate_default import Validate
+from overwrite_logic import Overwrite
 
 def apply_classification(row, mode="default"): 
 
-    validation = ValidateInput(args, row)
+    validate_logic = Validate(args, row)
+    overwrite_logic = Overwrite(row)
 
     if mode=="seonhye":
-        return validation.overwrite_seonhye()
+        return overwrite_logic.overwrite_seonhye()
     
     if mode=="sales":
-        return validation.overwrite_sales()
+        return overwrite_logic.overwrite_sales()
 
-    return validation.classify()
+    return validate_logic.classify()
     
 def upload_db(args, db):
 
