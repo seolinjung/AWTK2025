@@ -1,10 +1,12 @@
-import pandas as pd
-import helper
-from validate_email import ValidateEmail
+from handle_files import HandleFiles 
 
-class Validate:
+import helper as helper 
+
+class Validate(HandleFiles):
 
     def __init__(self, args, row):
+
+        super().__init__(args)
 
         self.args = args
         self.row = row 
@@ -19,15 +21,8 @@ class Validate:
         self.name = self.first_name + self.last_name
         self.record_owner = str(row['Related Record Owner']).strip()
 
-        self.invalid_companies = helper.retrieve_json("invalid-companies")
-        self.invalid_titles = helper.retrieve_json("invalid-titles")
-        self.invalid_record_owners = helper.retrieve_json("invalid-record-owners")
-        self.invalid_domains = helper.retrieve_json("invalid-domains")
-        self.valid_companies = helper.retrieve_json("valid-companies")
-        self.valid_titles = helper.retrieve_json("valid-titles")
-        self.ae_bdr = helper.retrieve_json("ae-bdr")
-
-        self.email_logic = ValidateEmail(row)
+        self.normalized_domain = helper.normalize_domain(self.domain)
+        self.username = helper.extract_username(self.email) 
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -39,7 +34,7 @@ class Validate:
 
         # "Hong Gil Dong" or "Gil Dong Hong"
         if len(record_owner_arr) == 3:
-            # intl -> korean 
+            # intl -> korean or korean -> intl
             alt_orders.append(" ".join([record_owner_arr[2], record_owner_arr[0], record_owner_arr[1]]))
             # korean -> intl
             alt_orders.append(" ".join([record_owner_arr[1], record_owner_arr[2], record_owner_arr[0]]))
@@ -74,23 +69,51 @@ class Validate:
                 item = self.record_owner
                 lookup = self.invalid_record_owners
 
+            if value == "email": 
+                item = self.email
+                lookup = self.invalid_emails
+
             if "domain" in value:
-                item = self.domain if value == "domain" else self.email_logic.normalized_domain
+                item = self.domain if value == "domain" else self.normalized_domain
                 lookup = self.invalid_domains[category]
 
             return any(k in item for k in lookup)
         
         return any(k == item for k in lookup)
     
-    def filter_decision_maker(self): 
+    def filter_decision_makers(self): 
 
-        if self.email_logic.is_free(self.email): 
+        if self.match("normalized_domain", "free-email", exact=True): 
             return '홀딩', 'decision maker: free e-mail'
         
         if self.match("company", "misc"): 
             return '홀딩', 'decision maker: misc company'
         
         return '유효', 'deciison maker'
+    
+    def filter_free_emails(self): 
+
+        # email username is only consisted of digits or special characters 
+        if self.username.isdigit() or self.is_special(): 
+            return '비유효', 'Invalid e-mail: username'
+
+        if self.match("email", "unspecified"): 
+            return '비유효', "Invalid e-mail: test" 
+
+        # 일반, personal         
+        if self.match("company", "unspecified"): 
+            return '비유효', "Unspecified company"
+
+        if self.match("record_owner", ""):
+            return '비유효', 'Invalid Record Owner'
+
+        if self.match("company", "suffix", "valid"): 
+            return '유효', 'valid suffix'
+
+        if not helper.includes_special(self.company):
+            return '유효', 'no special chars'
+
+        return '홀딩', 'Free e-mail'                 
     
     # return the classification result 
     def classify(self):
@@ -105,7 +128,8 @@ class Validate:
         if self.match("domain", "agency"):
             return '비유효', '에이전시'
         
-        self.filter_decision_maker()
+        if self.match("title", "decision-maker", "valid"):
+            self.filter_decision_makers()
         
         if self.match("company", "academia") or self.match("title", "academia"):
             return '비유효', '학교 소속'
@@ -130,7 +154,7 @@ class Validate:
         if any(char.isdigit() for char in self.name):
             return '홀딩', '불분명한 이름 및 회사명'
         
-        if self.match("company", "unspecified", exact=True): 
+        if self.match("title", "unspecified", exact=True) or self.match("company", "unspecified", exact=True): 
             return '비유효', '불분명한 이름 및 회사명'
         
         if not self.domain: 
@@ -139,7 +163,8 @@ class Validate:
         if self.match("title", "occupation"):
             return '홀딩', '직책'
         
-        self.email_logic.filter_free_email()
-                        
+        if self.match("normalized_domain", "free-email", exact=True): 
+            self.filter_free_emails()
+
         return '유효', ''
     

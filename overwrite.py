@@ -1,24 +1,24 @@
 import pandas as pd
 
-from validate_default import ValidateInput
+from validate import Validate
 
-import helper 
+import helper as helper 
 
-class Overwrite(ValidateInput): 
+class Overwrite(Validate): 
 
-    def __init__(self, row): 
+    def __init__(self, args, row): 
 
-        super().__init__(row)
+        super().__init__(args, row)
 
-        self.seonhye_confirm_path = helper.retrieve_csv(self.args, "seonhye_confirm", True)
+        self.seonhye_confirm_path = self.retrieve_csv("seonhye_confirm", True)
         self.seonhye_confirm_df = pd.read_csv(self.seonhye_confirm_path) if self.seonhye_confirm_path else False 
 
-        self.sales_invite_path = helper.retrieve_csv(self.args, "sales_invite")
+        self.sales_invite_path = self.retrieve_csv("sales_invite")
         self.sales_invite_df = pd.read_csv(self.sales_invite_path) if self.sales_invite_path else False  
 
     def overwrite_seonhye(self): 
 
-        seonhye_row = self.email_logic.lookup_email(self.seonhye_confirm_df)
+        seonhye_row = helper.lookup_df(self.email, self.seonhye_confirm_df)
 
         if not seonhye_row.empty:
             return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
@@ -26,7 +26,7 @@ class Overwrite(ValidateInput):
 
     def overwrite_sales(self):
 
-        if not self.email_logic.lookup_email(self.sales_invite_df).empty: 
+        if not helper.lookup_df(self.email, self.sales_invite_df).empty: 
             return '유효', 'Sales Invite' 
         return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]       
 

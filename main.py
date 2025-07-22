@@ -2,14 +2,16 @@ import argparse
 import os
 import pandas as pd
 
-from helper import extract_domain, retrieve_csv
-from validate_default import Validate
-from overwrite_logic import Overwrite
+import helper
+
+from handle_files import HandleFiles 
+from validate import Validate
+from overwrite import Overwrite
 
 def apply_classification(row, mode="default"): 
 
     validate_logic = Validate(args, row)
-    overwrite_logic = Overwrite(row)
+    overwrite_logic = Overwrite(args, row)
 
     if mode=="seonhye":
         return overwrite_logic.overwrite_seonhye()
@@ -33,12 +35,14 @@ def upload_db(args, db):
 
 def main(args):
 
-    sdr_confirm_path = retrieve_csv(args, "sdr_confirm")
-    confirm_mail_path = retrieve_csv(args, "confirm_mail")
+    handle_files = HandleFiles(args)
+
+    sdr_confirm_path = handle_files.retrieve_csv("sdr_confirm")
+    confirm_mail_path = handle_files.retrieve_csv("confirm_mail")
 
     # read main file 
     main_df = pd.read_csv(
-        retrieve_csv(args, "main"),
+        handle_files.retrieve_csv("main"),
         usecols=["First Name", "Last Name", "Email", "Company (Custom)", "Title", "Related Record Owner"],
         index_col=False)
     
@@ -63,7 +67,7 @@ def main(args):
     main_df_copy = main_df_copy.drop_duplicates(subset="Email", keep="last")
 
     # apply extracted domain and add to created column 
-    main_df_copy["domain"] = main_df_copy["Email"].apply(extract_domain)
+    main_df_copy["domain"] = main_df_copy["Email"].apply(helper.extract_domain)
 
     # add unique column 
     email_count = main_df_copy["Email"].value_counts()
@@ -71,10 +75,10 @@ def main(args):
 
     steps = ["default"]
 
-    if retrieve_csv(args, "seonhye_confirm", True):
+    if handle_files.retrieve_csv("seonhye_confirm", True):
         steps.append("seonhye")
 
-    if retrieve_csv(args, "sales_invite"):
+    if handle_files.retrieve_csv("sales_invite"):
         steps.append("sales")
 
     for step in steps: 
