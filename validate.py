@@ -55,28 +55,27 @@ class Validate(HandleFiles):
         lookup = [] 
         item = ""
 
-        if not exact:
+        if value == "title":
+            item = self.title 
+            lookup = self.valid_titles[category] if valid == "valid" else self.invalid_titles[category]
 
-            if value == "title":
-                item = self.title 
-                lookup = self.valid_titles[category] if valid == "valid" else self.invalid_titles[category]
+        if value == "company":
+            item = self.company 
+            lookup = self.valid_companies[category] if valid == "valid" else self.invalid_companies[category]
 
-            if value == "company":
-                item = self.company 
-                lookup = self.valid_companies[category] if valid == "valid" else self.invalid_companies[category]
+        if value == "record_owner":
+            item = self.record_owner
+            lookup = self.invalid_record_owners
 
-            if value == "record_owner":
-                item = self.record_owner
-                lookup = self.invalid_record_owners
+        if value == "email": 
+            item = self.email
+            lookup = self.invalid_emails
 
-            if value == "email": 
-                item = self.email
-                lookup = self.invalid_emails
+        if "domain" in value:
+            item = self.domain if value == "domain" else self.normalized_domain
+            lookup = self.invalid_domains[category]
 
-            if "domain" in value:
-                item = self.domain if value == "domain" else self.normalized_domain
-                lookup = self.invalid_domains[category]
-
+        if not exact: 
             return any(k in item for k in lookup)
         
         return any(k == item for k in lookup)
@@ -89,12 +88,12 @@ class Validate(HandleFiles):
         if self.match("company", "misc"): 
             return '홀딩', 'decision maker: misc company'
         
-        return '유효', 'deciison maker'
+        return '유효', 'decision maker'
     
     def filter_free_emails(self): 
 
         # email username is only consisted of digits or special characters 
-        if self.username.isdigit() or self.is_special(): 
+        if self.username.isdigit() or helper.exclusive_special(self.username): 
             return '비유효', 'Invalid e-mail: username'
 
         if self.match("email", "unspecified"): 
