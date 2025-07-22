@@ -128,7 +128,7 @@ class Validate(HandleFiles):
             return '비유효', '에이전시'
         
         if self.match("title", "decision-maker", "valid"):
-            self.filter_decision_makers()
+            return self.filter_decision_makers()
         
         if self.match("company", "academia") or self.match("title", "academia"):
             return '비유효', '학교 소속'
@@ -163,7 +163,7 @@ class Validate(HandleFiles):
             return '홀딩', '직책'
         
         if self.match("normalized_domain", "free-email", exact=True): 
-            self.filter_free_emails()
+            return self.filter_free_emails()
 
         return '유효', ''
     
