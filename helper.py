@@ -1,6 +1,4 @@
-import pandas as pd 
-import os
-import json
+import pandas as pd
 import re
 
 def includes_special(input):
@@ -9,10 +7,25 @@ def includes_special(input):
 
     return True if rule.search(input) else False
 
+def exclusive_special(input): 
+
+    special_chars = "[@_!#$%^&*()<>?/|}{~:]"
+    for char in input: 
+        if char not in special_chars: 
+            return False 
+    return True
+
 def extract_domain(email):
+
     if pd.isna(email) or "@" not in str(email):
         return ''
     return str(email).split("@")[-1].lower()
+
+def extract_username(email): 
+
+    if pd.isna(email) or "@" not in str(email):
+        return ''
+    return str(email).split("@")[0].lower()
 
 def normalize_domain(domain):
 
@@ -20,25 +33,11 @@ def normalize_domain(domain):
     domain_arr = domain.split('.')
     return domain_arr[0]
 
-def retrieve_json(input):
-
-    json_path = os.path.join('data', 'exceptions')
-
-    name = input + ".json"
-    path = os.path.join(json_path, name)
-
-    if os.path.exists(path):
-        with open(path, 'r') as file: 
-            return json.load(file)[input]
-        return False
-    return False
-
-def retrieve_csv(args, input, seonhye=False):
-
-    db_root_path = os.path.join("raw_db", "seonhye") if seonhye else os.path.join("raw_db", "org_db", args.date)
-    final_path = os.path.join(db_root_path, input + ".csv")
-
-    if os.path.exists(final_path):
-        return final_path
+def lookup_df(email, df):
     
-    return False
+    if df is not None: 
+        selected_emails = set(df['Email'])
+        if email in selected_emails:
+            return df[df['Email'] == email].iloc[0]
+        return pd.DataFrame()
+    return pd.DataFrame()
