@@ -1,5 +1,6 @@
 import os 
 import json 
+import pandas as pd 
 
 class HandleFiles:
 
@@ -8,6 +9,7 @@ class HandleFiles:
         self.db_root_path = os.path.join("data", "raw_db", "org_db", args.date)
         self.seonhye_path = os.path.join("data", "raw_db", "seonhye")
         self.json_path = os.path.join("data", "exceptions")
+        self.modified_main_path = os.path.join("data", "results", args.date)
 
         self.invalid_companies = self.retrieve_json("invalid-companies")
         self.invalid_titles = self.retrieve_json("invalid-titles")
@@ -38,3 +40,13 @@ class HandleFiles:
             return final_path
         
         return False
+    
+    def upload_db(self, main_df):
+
+        if not os.path.exists(self.modified_main_path):
+            os.makedirs(self.modified_main_path, exist_ok=True)
+
+        writer = pd.ExcelWriter(os.path.join(self.modified_main_path, "Sorted_DB.xlsx"))
+        main_df.to_excel(writer)
+
+        writer.close()   
