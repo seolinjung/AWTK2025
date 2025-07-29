@@ -4,7 +4,7 @@ import argparse
 
 def load_file(folder_date, file_stem):
     file_name = f"{file_stem}.csv"
-    path = os.path.join("raw_db", "org_db", folder_date, file_name)
+    path = os.path.join("data","raw_db", "org_db", folder_date, file_name)
 
     if not os.path.exists(path):
         print(f"❌ 파일을 찾을 수 없습니다: {path}")
