@@ -21,18 +21,6 @@ def extract_domain(email):
         return ''
     return str(email).split("@")[-1].lower()
 
-def extract_username(email): 
-
-    if pd.isna(email) or "@" not in str(email):
-        return ''
-    return str(email).split("@")[0].lower()
-
-def normalize_domain(domain):
-
-    # get the value before the period. 'samsung.com' should return 'samsung'
-    domain_arr = domain.split('.')
-    return domain_arr[0]
-
 def lookup_df(email, df):
     
     if df is not None: 

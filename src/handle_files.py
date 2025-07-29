@@ -4,8 +4,10 @@ import pandas as pd
 
 class HandleFiles:
 
-    def __init__(self, args): 
+    def __init__(self, *, args, **kwargs): 
 
+        super().__init__(**kwargs)
+        
         self.db_root_path = os.path.join("data", "raw_db", "org_db", args.date)
         self.seonhye_path = os.path.join("data", "raw_db", "seonhye")
         self.json_path = os.path.join("data", "exceptions")

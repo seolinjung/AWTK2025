@@ -1,29 +1,16 @@
 import pandas as pd 
 
 from handle_files import HandleFiles 
+from row_operations import RowOperations
 import helper as helper 
 
-class Validate(HandleFiles):
+class Validate(RowOperations, HandleFiles):
 
-    def __init__(self, args, row):
+    def __init__(self, *, args, row):
 
-        super().__init__(args)
+        super().__init__(args=args, row=row)
 
-        self.args = args
         self.row = row 
-
-        # define all the major column values 
-        self.title = str(row['Title']).lower()
-        self.company = str(row['Company (Custom)']).strip().lower()
-        self.email = str(row['Email']).lower()
-        self.domain = row['domain']
-        self.first_name = str(row.get('First Name', '')).lower()
-        self.last_name = str(row.get('Last Name', '')).lower()
-        self.name = self.first_name + self.last_name
-        self.record_owner = str(row['Related Record Owner']).strip()
-
-        self.normalized_domain = helper.normalize_domain(self.domain)
-        self.username = helper.extract_username(self.email) 
 
         self.seonhye_confirm_path = self.retrieve_csv("seonhye_confirm", True)
         self.seonhye_confirm_df = pd.read_csv(self.seonhye_confirm_path) if self.seonhye_confirm_path else False 

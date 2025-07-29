@@ -4,9 +4,9 @@ import helper as helper
 
 class Initialize(HandleFiles):
 
-    def __init__(self, args): 
+    def __init__(self, *, args): 
 
-        super().__init__(args)
+        super().__init__(args=args)
 
         self.main_path = self.retrieve_csv("main")
         self.sdr_confirm_path = self.retrieve_csv("sdr_confirm")
