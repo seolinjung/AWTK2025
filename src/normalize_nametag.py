@@ -72,32 +72,6 @@ class NormalizeNametag(HandleFiles):
         with open("cleansed_accounts.txt", "a") as file: 
             file.write(self.normalize_account())
             file.write("\n")
-            
-        # if lg, samsung, or hyundai, return original company name 
-        if self.detect_special() in self.special_companies: 
-            return self.account
-        
-        past_records_path = os.path.join("data", "past_records.txt")
-
-        # compare company email with each word in normalized array. 
-        if self.company_email in self.normalized_account: 
-            # then return company email 
-            return self.company_email
-    
-        comparisons
-            company email: dkbmc, account: DK BMC Co.,Ltd.
-            company email: doosan, account: Doosan Corporation Digital Innovation
-            company email: torder, account: t'order
-            company email: i2max, account: I2MAX co., Ltd
-            company email: tsne, account: Taesung S & E Inc.
-            company email: emart, account: E-MART INC.
-
-        conclusion
-            1. draw out array version of account (DK BMC Co.,Ltd. -> ['DK', 'BMC', Co.,Ltd'])
-            2. go through each word
-                a. strip all special characteres (E-MART -> EMART, t'order -> torder)
-                b. all lowercase (EMART -> emart, I2MAX -> i2max) 
-            3. compare company email with each word in this cleansed array. does it exist? then company email will be 
         '''
              
         # if email and company are different, return email first 
