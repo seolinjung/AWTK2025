@@ -18,6 +18,8 @@ class Validate(RowOperations, HandleFiles):
         self.sales_invite_path = self.retrieve_csv("sales_invite")
         self.sales_invite_df = pd.read_csv(self.sales_invite_path) if self.sales_invite_path else False 
 
+        self.normalized_domain = self.normalize_domain()
+
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
         
@@ -163,7 +165,7 @@ class Validate(RowOperations, HandleFiles):
     
     def overwrite_seonhye(self): 
 
-        seonhye_row = helper.lookup_df(self.email, self.seonhye_confirm_df)
+        seonhye_row = helper.lookup_df(self.seonhye_confirm_df, 'Email', self.email)
 
         if not seonhye_row.empty:
             return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
@@ -171,6 +173,6 @@ class Validate(RowOperations, HandleFiles):
 
     def overwrite_sales(self):
 
-        if not helper.lookup_df(self.email, self.sales_invite_df).empty: 
+        if not helper.lookup_df(self.sales_invite_df, 'Email', self.email).empty: 
             return '유효', 'Sales Invite' 
         return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]    

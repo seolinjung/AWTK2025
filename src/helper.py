@@ -21,11 +21,11 @@ def extract_domain(email):
         return ''
     return str(email).split("@")[-1].lower()
 
-def lookup_df(email, df):
+def lookup_df(df, category, value):
     
     if df is not None: 
-        selected_emails = set(df['Email'])
-        if email in selected_emails:
-            return df[df['Email'] == email].iloc[0]
+        selected_values = set(df[category])
+        if value in selected_values:
+            return df[df[category] == value].iloc[0]
         return pd.DataFrame()
     return pd.DataFrame()

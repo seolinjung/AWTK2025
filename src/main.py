@@ -21,9 +21,9 @@ def apply_validation(row, mode="default"):
 
 def apply_normalization(row):
     
-    normalize_nametag = NormalizeNametag(row=row)
+    normalize_nametag = NormalizeNametag(args=args, row=row)
 
-    return normalize_nametag.execute()
+    return normalize_nametag.normalize()
     
 def main(args):
 
@@ -34,9 +34,14 @@ def main(args):
     '''
     
     initialize_logic = Initialize(args=args)
-    main_df = initialize_logic.execute()
+    main_df = initialize_logic.prepare_main()
+    nametag_df = initialize_logic.prepare_nametag()
+    
+    initialize_logic.create_nametag_records(nametag_df)
 
-    if args.validate:  
+    input_mode = args.mode
+
+    if input_mode == "validate":  
         steps = ["default"]
 
         if handle_files.retrieve_csv("seonhye_confirm", True):
@@ -51,8 +56,10 @@ def main(args):
     
         main_df.reset_index(inplace=True, drop=True)
 
-    if args.normalize: 
-        print("Normalize operation not implemented yet. Terminating.")
+    if input_mode == "normalize": 
+
+        nametag_df[['company_normalized']] = nametag_df.apply(
+            lambda row: apply_normalization(row), axis=1, result_type='expand')
     
     # upload db to excel file 
     handle_files.upload_db(main_df)
@@ -61,9 +68,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", type=str)
-    parser.add_argument("--validate", type=bool, default=False)
-    parser.add_argument("--normalize", type=bool, default=False)
-    parser.add_argument("--check-db", type=bool, default=False)
+    parser.add_argument("--mode", type=str)
+
+    '''
+    mode = validate 
+    mode = normalize 
+    '''
 
     args = parser.parse_args()
 
