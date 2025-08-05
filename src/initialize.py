@@ -37,6 +37,8 @@ class Initialize(HandleFiles):
             domain = helper.extract_domain(nametag_emails[i])
             if domain in unique_domains: 
                 continue
+            if any(k in domain for k in self.invalid_domains['free-email']):
+                continue
             unique_domains.append(domain)
             temporary_dict['domain'] = domain
             temporary_dict['company_cleansed'] = nametag_cleansed[i]

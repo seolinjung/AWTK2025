@@ -27,6 +27,12 @@ def apply_normalization(row):
     
 def main(args):
 
+    if not args.date: 
+        parser.error("You must provide a date to continue.")
+    
+    if not args.mode: 
+        parser.error("YOu must provide an option for either validate or normalize.")
+
     handle_files = HandleFiles(args=args)
 
     '''
@@ -35,9 +41,6 @@ def main(args):
     
     initialize_logic = Initialize(args=args)
     main_df = initialize_logic.prepare_main()
-    nametag_df = initialize_logic.prepare_nametag()
-    
-    initialize_logic.create_nametag_records(nametag_df)
 
     input_mode = args.mode
 
@@ -58,6 +61,9 @@ def main(args):
 
     if input_mode == "normalize": 
 
+        nametag_df = initialize_logic.prepare_nametag()
+        initialize_logic.create_nametag_records(nametag_df)
+
         nametag_df[['company_normalized']] = nametag_df.apply(
             lambda row: apply_normalization(row), axis=1, result_type='expand')
     
@@ -67,13 +73,8 @@ def main(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--date", type=str)
-    parser.add_argument("--mode", type=str)
-
-    '''
-    mode = validate 
-    mode = normalize 
-    '''
+    parser.add_argument("--date", type=str, help="Which specific date would you like to refer to? Write in MMDD format.")
+    parser.add_argument("--mode", type=str, help="Type either 'validate' or 'normalize'.")
 
     args = parser.parse_args()
 

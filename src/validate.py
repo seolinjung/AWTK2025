@@ -12,13 +12,11 @@ class Validate(RowOperations, HandleFiles):
 
         self.row = row 
 
-        self.seonhye_confirm_path = self.retrieve_csv("seonhye_confirm", True)
+        self.seonhye_confirm_path = self.retrieve_csv("seonhye_confirm", seonhye=True)
         self.seonhye_confirm_df = pd.read_csv(self.seonhye_confirm_path) if self.seonhye_confirm_path else False 
 
         self.sales_invite_path = self.retrieve_csv("sales_invite")
         self.sales_invite_df = pd.read_csv(self.sales_invite_path) if self.sales_invite_path else False 
-
-        self.normalized_domain = self.normalize_domain()
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -112,15 +110,11 @@ class Validate(RowOperations, HandleFiles):
     
     # return the classification result 
     def classify(self):
-
-        # 필수? 
-        if self.title == "학생": 
-            return '비유효', '학교 소속'
     
-        if self.match("title", "academia", "valid") and self.record_owner == "Yoon Yeji":
-            return '유효', 'academia'
+        if self.match("title", "academia", "valid") and self.ref_ae_bdr():
+            return '유효', 'ae-bdr'
 
-        if self.match("domain", "agency"):
+        if self.match("domain", "agency", exact=True):
             return '비유효', '에이전시'
         
         if self.match("title", "decision-maker", "valid"):
@@ -133,7 +127,7 @@ class Validate(RowOperations, HandleFiles):
             return '비유효', '프리랜서'
         
         if self.match("title", "unemployed") or self.match("company", "unemployed"):
-            return '비유효', '무직'
+            return '비유효', '무직' if not self.match("title", "misc", valid=True) else '유효', '실무직'
         
         # TODO: 기타 비유효 로직 포함해야 함 
         if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
@@ -143,14 +137,11 @@ class Validate(RowOperations, HandleFiles):
         if self.match("normalized_domain", "competitor", exact=True) or self.match("company", "competitor"):
             return '비유효', '경쟁사'
         
-        if self.ref_ae_bdr():
-            return '유효', 'ae-bdr'
-        
-        if any(char.isdigit() for char in self.name):
-            return '홀딩', '불분명한 이름 및 회사명'
+        if any(char.isdigit() for char in self.name) or any(char.isdigit() for char in self.title):
+            return '홀딩', '불분명한 이름, 직급 및 회사명'
         
         if self.match("title", "unspecified", exact=True) or self.match("company", "unspecified", exact=True): 
-            return '비유효', '불분명한 이름 및 회사명'
+            return '비유효', '불분명한 이름, 직급 및 회사명'
         
         if not self.domain: 
             return '비유효', '불분명한 e-mail'

@@ -18,6 +18,7 @@ class NormalizeNametag(HandleFiles):
 
         self.domain = helper.extract_domain(self.email)
 
+        self.nametag_records_path = os.path.join("data", "nametag_records.csv")
         self.nametag_records = self.read_past_records()
 
         # issue - kr.kpmg.com -> kr, music.yamaha.com -> music
@@ -28,10 +29,8 @@ class NormalizeNametag(HandleFiles):
 
     def read_past_records(self): 
         
-        nametag_records_path = os.path.join("data", "nametag_records.csv")
-
-        if os.path.exists(nametag_records_path):
-            with open(nametag_records_path, "r") as file: 
+        if os.path.exists(self.nametag_records_path):
+            with open(self.nametag_records_path, "r") as file: 
                 nametag_records = list(csv.DictReader(file))
                 return nametag_records
 
@@ -64,15 +63,32 @@ class NormalizeNametag(HandleFiles):
             if any(k == self.account for k in self.special_domains[company]): 
                 return company
             
-        return ''         
+        return '' 
 
+    def update_records(self, cleansed_result): 
+
+        with open(self.nametag_records_path, "a") as file: 
+            file.write(self.domain, cleansed_result)      
+    
     def normalize(self): 
+
+        cleansed_result = ''
+        return cleansed_result 
+
+    def execute(self): 
 
         '''
         with open("cleansed_accounts.txt", "a") as file: 
             file.write(self.normalize_account())
             file.write("\n")
         '''
+
+        if not any(k in self.domain for k in self.invalid_domains['free-email']): 
+            
+            if self.domain in self.nametag_records: 
+                return self.nametag_records[self.domain]
+            
+
              
         # if email and company are different, return email first 
         

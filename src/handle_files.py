@@ -9,7 +9,7 @@ class HandleFiles:
         super().__init__(**kwargs)
         
         self.db_root_path = os.path.join("data", "raw_db", "org_db", args.date)
-        self.seonhye_path = os.path.join("data", "raw_db", "seonhye")
+        self.seonhye_path = os.path.join("data", "raw_db", "seonhye", args.date)
         self.json_path = os.path.join("data", "exceptions")
         
         self.modified_main_path = os.path.join("data", "results", args.date)
@@ -40,12 +40,11 @@ class HandleFiles:
 
     def retrieve_csv(self, input, seonhye=False):
 
-        root_path = self.seonhye_path if seonhye else self.db_root_path
-        final_path = os.path.join(root_path, input + ".csv")
+        path = self.db_root_path if not seonhye else self.seonhye_path 
+        file = os.path.join(path, (input + ".csv"))
 
-        if os.path.exists(final_path):
-            return final_path
-        
+        if os.path.exists(file):
+            return file
         return False
     
     def upload_db(self, main_df):

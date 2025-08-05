@@ -16,6 +16,9 @@ class RowOperations:
         self.name = self.first_name + self.last_name
         self.record_owner = str(row.get('Related Record Owner')).strip()
 
+        self.normalized_domain = self.normalize_domain()
+        self.username = self.extract_username()
+
     def extract_username(self): 
 
         if pd.isna(self.email) or "@" not in str(self.email):

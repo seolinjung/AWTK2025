@@ -9,7 +9,7 @@ def includes_special(input):
 
 def exclusive_special(input): 
 
-    special_chars = "[@_!#$%^&*()<>?/|}{~:]"
+    special_chars = "[@_!#$%^&*()<>?/|}{~:]-"
     for char in input: 
         if char not in special_chars: 
             return False 
