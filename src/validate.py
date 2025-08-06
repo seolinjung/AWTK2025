@@ -82,13 +82,17 @@ class Validate(RowOperations, HandleFiles):
         if self.match("company", "misc"): 
             return '홀딩', 'decision maker: misc company'
         
+        if self.match("company", "freelancer") or self.match("company", "unemployed"): 
+            return '비유효', 'decision maker: unemployed/freelancer'
+        
         return '유효', 'decision maker'
     
     def filter_free_emails(self): 
 
         # email username is only consisted of digits or special characters 
-        if self.username.isdigit() or helper.exclusive_special(self.username): 
-            return '비유효', 'Invalid e-mail: username'
+        for item in [self.username, self.company]: 
+            if item.isdigit() or helper.exclusive_special(item): 
+                return '비유효', 'Invalid e-mail: company/username'
 
         if self.match("email", "unspecified"): 
             return '비유효', "Invalid e-mail: test" 
@@ -106,7 +110,12 @@ class Validate(RowOperations, HandleFiles):
         if not helper.includes_special(self.company):
             return '유효', 'no special chars'
 
-        return '홀딩', 'Free e-mail'                 
+        return '홀딩', 'Free e-mail'    
+
+    def is_one_letter(self): 
+
+        if len(self.title) == 1 or len(self.company) == 1: 
+            return True         
     
     # return the classification result 
     def classify(self):
@@ -127,7 +136,10 @@ class Validate(RowOperations, HandleFiles):
             return '비유효', '프리랜서'
         
         if self.match("title", "unemployed") or self.match("company", "unemployed"):
-            return '비유효', '무직' if not self.match("title", "misc", valid=True) else '유효', '실무직'
+            if self.match("title", "misc", valid=True):
+                return '유효', '실무직'
+            else:
+                return '비유효', '무직' 
         
         # TODO: 기타 비유효 로직 포함해야 함 
         if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
@@ -137,7 +149,7 @@ class Validate(RowOperations, HandleFiles):
         if self.match("normalized_domain", "competitor", exact=True) or self.match("company", "competitor"):
             return '비유효', '경쟁사'
         
-        if any(char.isdigit() for char in self.name) or any(char.isdigit() for char in self.title):
+        if any(char.isdigit() for char in self.name) or any(char.isdigit() for char in self.title) or self.is_one_letter():
             return '홀딩', '불분명한 이름, 직급 및 회사명'
         
         if self.match("title", "unspecified", exact=True) or self.match("company", "unspecified", exact=True): 
