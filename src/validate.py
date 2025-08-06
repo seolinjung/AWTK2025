@@ -1,28 +1,22 @@
-from handle_files import HandleFiles 
+import pandas as pd 
 
+from handle_files import HandleFiles 
+from row_operations import RowOperations
 import helper as helper 
 
-class Validate(HandleFiles):
+class Validate(RowOperations, HandleFiles):
 
-    def __init__(self, args, row):
+    def __init__(self, *, args, row):
 
-        super().__init__(args)
+        super().__init__(args=args, row=row)
 
-        self.args = args
         self.row = row 
 
-        # define all the major column values 
-        self.title = str(row['Title']).lower()
-        self.company = str(row['Company (Custom)']).strip().lower()
-        self.email = str(row['Email']).lower()
-        self.domain = row['domain']
-        self.first_name = str(row.get('First Name', '')).lower()
-        self.last_name = str(row.get('Last Name', '')).lower()
-        self.name = self.first_name + self.last_name
-        self.record_owner = str(row['Related Record Owner']).strip()
+        self.seonhye_confirm_path = self.retrieve_csv("seonhye_confirm", seonhye=True)
+        self.seonhye_confirm_df = pd.read_csv(self.seonhye_confirm_path) if self.seonhye_confirm_path else False 
 
-        self.normalized_domain = helper.normalize_domain(self.domain)
-        self.username = helper.extract_username(self.email) 
+        self.sales_invite_path = self.retrieve_csv("sales_invite")
+        self.sales_invite_df = pd.read_csv(self.sales_invite_path) if self.sales_invite_path else False 
 
     # algorithm to reference ae bdr list in accordance with Korean name order
     def ref_ae_bdr(self):
@@ -88,13 +82,17 @@ class Validate(HandleFiles):
         if self.match("company", "misc"): 
             return '홀딩', 'decision maker: misc company'
         
+        if self.match("company", "freelancer") or self.match("company", "unemployed"): 
+            return '비유효', 'decision maker: unemployed/freelancer'
+        
         return '유효', 'decision maker'
     
     def filter_free_emails(self): 
 
         # email username is only consisted of digits or special characters 
-        if self.username.isdigit() or helper.exclusive_special(self.username): 
-            return '비유효', 'Invalid e-mail: username'
+        for item in [self.username, self.company]: 
+            if item.isdigit() or helper.exclusive_special(item): 
+                return '비유효', 'Invalid e-mail: company/username'
 
         if self.match("email", "unspecified"): 
             return '비유효', "Invalid e-mail: test" 
@@ -112,19 +110,20 @@ class Validate(HandleFiles):
         if not helper.includes_special(self.company):
             return '유효', 'no special chars'
 
-        return '홀딩', 'Free e-mail'                 
+        return '홀딩', 'Free e-mail'    
+
+    def is_one_letter(self): 
+
+        if len(self.title) == 1 or len(self.company) == 1: 
+            return True         
     
     # return the classification result 
     def classify(self):
-
-        # 필수? 
-        if self.title == "학생": 
-            return '비유효', '학교 소속'
     
-        if self.match("title", "academia", "valid") and self.record_owner == "Yoon Yeji":
-            return '유효', 'academia'
+        if self.match("title", "academia", "valid") and self.ref_ae_bdr():
+            return '유효', 'ae-bdr'
 
-        if self.match("domain", "agency"):
+        if self.match("domain", "agency", exact=True):
             return '비유효', '에이전시'
         
         if self.match("title", "decision-maker", "valid"):
@@ -137,7 +136,10 @@ class Validate(HandleFiles):
             return '비유효', '프리랜서'
         
         if self.match("title", "unemployed") or self.match("company", "unemployed"):
-            return '비유효', '무직'
+            if self.match("title", "misc", "valid"):
+                return '유효', '실무직'
+            else:
+                return '비유효', '무직' 
         
         # TODO: 기타 비유효 로직 포함해야 함 
         if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
@@ -147,14 +149,11 @@ class Validate(HandleFiles):
         if self.match("normalized_domain", "competitor", exact=True) or self.match("company", "competitor"):
             return '비유효', '경쟁사'
         
-        if self.ref_ae_bdr():
-            return '유효', 'ae-bdr'
-        
-        if any(char.isdigit() for char in self.name):
-            return '홀딩', '불분명한 이름 및 회사명'
+        if any(char.isdigit() for char in self.name) or any(char.isdigit() for char in self.title) or self.is_one_letter():
+            return '홀딩', '불분명한 이름, 직급 및 회사명'
         
         if self.match("title", "unspecified", exact=True) or self.match("company", "unspecified", exact=True): 
-            return '비유효', '불분명한 이름 및 회사명'
+            return '비유효', '불분명한 이름, 직급 및 회사명'
         
         if not self.domain: 
             return '비유효', '불분명한 e-mail'
@@ -167,3 +166,16 @@ class Validate(HandleFiles):
 
         return '유효', ''
     
+    def overwrite_seonhye(self): 
+
+        seonhye_row = helper.lookup_df(self.seonhye_confirm_df, 'Email', self.email)
+
+        if not seonhye_row.empty:
+            return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
+        return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]
+
+    def overwrite_sales(self):
+
+        if not helper.lookup_df(self.sales_invite_df, 'Email', self.email).empty: 
+            return '유효', 'Sales Invite' 
+        return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]    
