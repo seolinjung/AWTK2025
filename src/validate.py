@@ -139,10 +139,7 @@ class Validate(RowOperations, HandleFiles):
             return '비유효', '프리랜서'
         
         if self.match("title", "unemployed") or self.match("company", "unemployed"):
-            if self.match("title", "misc", "valid"):
-                return '유효', ''
-            else:
-                return '비유효', '무직' 
+            return '비유효', '무직' 
         
         # TODO: 기타 비유효 로직 포함해야 함 
         if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
