@@ -123,7 +123,7 @@ class Validate(RowOperations, HandleFiles):
         if self.match("title", "academia", "valid") and self.ref_ae_bdr():
             return '유효', 'ae-bdr'
 
-        if self.match("domain", "agency", exact=True):
+        if self.match("normalized_domain", "agency"):
             return '비유효', '에이전시'
         
         if self.match("title", "decision-maker", "valid"):
