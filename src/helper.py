@@ -11,7 +11,7 @@ def exclusive_special(input):
 
     special_chars = "[@_!#$%^&*()<>?/|}{~:]-."
     for char in input: 
-        if not char.isdigit() and char not in special_chars: 
+        if (not char.isdigit()) and (char not in special_chars): 
             return False 
     return True
 
