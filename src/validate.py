@@ -93,22 +93,25 @@ class Validate(RowOperations, HandleFiles):
         for item in [self.username, self.company]: 
             if item.isdigit() or helper.exclusive_special(item): 
                 return '비유효', 'Invalid e-mail: company/username'
+            
+        if self.match("title", "unspecified", exact=True) or self.match("company", "unspecified", exact=True): 
+            return '비유효', '불분명한 이름, 직급 및 회사명'
 
         if self.match("email", "unspecified"): 
             return '비유효', "Invalid e-mail: test" 
 
-        # 일반, personal         
-        if self.match("company", "unspecified"): 
+        # 일반, personal
+        if self.match("company", "unspecified") or self.company == 'company': 
             return '비유효', "Unspecified company"
-
-        if self.match("record_owner", ""):
-            return '비유효', 'Invalid Record Owner'
 
         if self.match("company", "suffix", "valid"): 
             return '유효', 'valid suffix'
 
         if not helper.includes_special(self.company):
             return '유효', 'no special chars'
+
+        if self.match("record_owner", ""):
+            return '비유효', 'Invalid Record Owner'
 
         return '홀딩', 'Free e-mail'    
 
@@ -137,12 +140,15 @@ class Validate(RowOperations, HandleFiles):
         
         if self.match("title", "unemployed") or self.match("company", "unemployed"):
             if self.match("title", "misc", "valid"):
-                return '유효', '실무직'
+                return '유효', ''
             else:
                 return '비유효', '무직' 
         
         # TODO: 기타 비유효 로직 포함해야 함 
         if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
+            if "owner" in self.title: 
+                if self.match("title", "misc", "valid"): 
+                    return '유효', ''
             return '비유효', '기타 비유효'
         
         # exception in match logic: domain must match exactly 
@@ -151,9 +157,6 @@ class Validate(RowOperations, HandleFiles):
         
         if any(char.isdigit() for char in self.name) or any(char.isdigit() for char in self.title) or self.is_one_letter():
             return '홀딩', '불분명한 이름, 직급 및 회사명'
-        
-        if self.match("title", "unspecified", exact=True) or self.match("company", "unspecified", exact=True): 
-            return '비유효', '불분명한 이름, 직급 및 회사명'
         
         if not self.domain: 
             return '비유효', '불분명한 e-mail'
