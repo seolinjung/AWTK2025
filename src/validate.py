@@ -76,21 +76,32 @@ class Validate(RowOperations, HandleFiles):
     
     def filter_decision_makers(self): 
 
-        if self.match("normalized_domain", "free-email", exact=True): 
-            return '홀딩', 'decision maker: free e-mail'
-        
-        if self.match("company", "misc"): 
-            return '홀딩', 'decision maker: misc company'
-        
+        # email username is only consisted of digits or special characters 
+        for item in [self.title, self.username, self.company]: 
+            if item.isdigit() or helper.exclusive_special(item): 
+                return '비유효', 'decision maker: 숫자 혹은 특수문자' 
+
         if self.match("company", "freelancer") or self.match("company", "unemployed"): 
             return '비유효', 'decision maker: unemployed/freelancer'
+        
+        if self.match("company", "unspecified"): 
+            return '비유효', 'decision maker: unspecified company'
+        
+        if self.match("company", "academia"): 
+            return '비유효', 'decision maker: academia'
+
+        if self.match("company", "misc") or self.match("title", "misc"): 
+            return '비유효', 'decision maker: misc company'
+
+        if self.match("normalized_domain", "free-email", exact=True): 
+            return '홀딩', 'decision maker: free e-mail'
         
         return '유효', 'decision maker'
     
     def filter_free_emails(self): 
 
         # email username is only consisted of digits or special characters 
-        for item in [self.username, self.company]: 
+        for item in [self.title, self.username, self.company]: 
             if item.isdigit() or helper.exclusive_special(item): 
                 return '비유효', 'Invalid e-mail: company/username'
             
@@ -107,18 +118,25 @@ class Validate(RowOperations, HandleFiles):
         if self.match("company", "suffix", "valid"): 
             return '유효', 'valid suffix'
 
-        if not helper.includes_special(self.company):
-            return '유효', 'no special chars'
-
         if self.match("record_owner", ""):
             return '비유효', 'Invalid Record Owner'
 
+        if not helper.includes_special(self.company):
+            return '유효', 'no special chars'
+
         return '홀딩', 'Free e-mail'    
 
-    def is_one_letter(self): 
+    def is_one_letter(self, input): 
 
-        if len(self.title) == 1 or len(self.company) == 1: 
-            return True         
+        '''
+        if item is one letter, but if it's a special character, it shouldn't return True 
+        '''
+
+        if len(input) == 1: 
+            if helper.exclusive_special(input): 
+                return False
+            return True
+        return False          
     
     # return the classification result 
     def classify(self):
@@ -139,11 +157,14 @@ class Validate(RowOperations, HandleFiles):
             return '비유효', '프리랜서'
         
         if self.match("title", "unemployed") or self.match("company", "unemployed"):
-            return '비유효', '무직' 
+            if self.match("company", "suffix", "valid"):
+                return '유효', ''
+            else:
+                return '비유효', '무직' 
         
         # TODO: 기타 비유효 로직 포함해야 함 
         if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
-            if "owner" in self.title: 
+            if "owner" in self.company: 
                 if self.match("title", "misc", "valid"): 
                     return '유효', ''
             return '비유효', '기타 비유효'
@@ -152,7 +173,7 @@ class Validate(RowOperations, HandleFiles):
         if self.match("normalized_domain", "competitor", exact=True) or self.match("company", "competitor"):
             return '비유효', '경쟁사'
         
-        if any(char.isdigit() for char in self.name) or any(char.isdigit() for char in self.title) or self.is_one_letter():
+        if any(char.isdigit() for char in self.name) or any(char.isdigit() for char in self.title) or self.is_one_letter(self.title) or self.is_one_letter(self.company):
             return '홀딩', '불분명한 이름, 직급 및 회사명'
         
         if not self.domain: 
