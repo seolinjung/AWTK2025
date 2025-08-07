@@ -3,17 +3,16 @@ import re
 
 def includes_special(input):
 
-    rule = re.compile("[@_!#$%^&*()<>?/|}{~:]-")
+    rule = re.compile("[@_!#$%^&*()<>?/|}{~:]-.")
 
     return True if rule.search(input) else False
 
 def exclusive_special(input): 
 
-    special_chars = "[@_!#$%^&*()<>?/|}{~:]-"
+    special_chars = "[@_!#$%^&*()<>?/|}{~:]-."
     for char in input: 
-        if char.isdigit() or char in special_chars: 
-            continue
-        return False 
+        if not char.isdigit() and char not in special_chars: 
+            return False 
     return True
 
 def extract_domain(email):
