@@ -159,6 +159,8 @@ class Validate(RowOperations, HandleFiles):
         if self.match("title", "unemployed") or self.match("company", "unemployed"):
             if self.match("company", "suffix", "valid"):
                 return '유효', ''
+            if self.match("title", "misc", "valid"):
+                return '유효', ''
             else:
                 return '비유효', '무직' 
 
