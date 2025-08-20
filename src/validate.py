@@ -77,7 +77,7 @@ class Validate(RowOperations, HandleFiles):
     def filter_decision_makers(self): 
 
         # email username is only consisted of digits or special characters 
-        for item in [self.title, self.username, self.company]: 
+        for item in [self.title, self.company]: 
             if item.isdigit() or helper.exclusive_special(item): 
                 return '비유효', 'decision maker: 숫자 혹은 특수문자' 
 
@@ -100,13 +100,13 @@ class Validate(RowOperations, HandleFiles):
     
     def filter_free_emails(self): 
 
-        # email username is only consisted of digits or special characters 
-        for item in [self.title, self.username, self.company]: 
+        # title/company is only consisted of digits or special characters 
+        for item in [self.title, self.company]: 
             if item.isdigit() or helper.exclusive_special(item): 
-                return '비유효', 'Invalid e-mail: company/username'
+                return '비유효', 'Free email: invalid title/company'
             
         if self.match("title", "unspecified", exact=True) or self.match("company", "unspecified", exact=True): 
-            return '비유효', '불분명한 이름, 직급 및 회사명'
+            return '비유효', 'Free email: 불분명한 이름, 직급 및 회사명'
 
         if self.match("email", "unspecified"): 
             return '비유효', "Invalid e-mail: test" 
@@ -116,13 +116,13 @@ class Validate(RowOperations, HandleFiles):
             return '비유효', "Unspecified company"
 
         if self.match("company", "suffix", "valid"): 
-            return '유효', 'valid suffix'
+            return '유효', 'Free email: valid suffix'
 
         if self.match("record_owner", ""):
-            return '비유효', 'Invalid Record Owner'
+            return '비유효', 'Free email: Invalid Record Owner'
 
         if not helper.includes_special(self.company):
-            return '유효', 'no special chars'
+            return '유효', 'Free email: no special chars'
 
         return '홀딩', 'Free e-mail'    
 
@@ -142,7 +142,7 @@ class Validate(RowOperations, HandleFiles):
     def classify(self):
     
         if self.match("title", "academia", "valid") and self.ref_ae_bdr():
-            return '유효', 'ae-bdr'
+            return '유효', '학교 소속 유효 직급'
 
         if self.match("normalized_domain", "agency"):
             return '비유효', '에이전시'
@@ -161,10 +161,9 @@ class Validate(RowOperations, HandleFiles):
                 return '유효', ''
             else:
                 return '비유효', '무직' 
-        
-        # TODO: 기타 비유효 로직 포함해야 함 
-        if self.match("title", "misc") or self.match("company", "misc") or self.company == "intern": 
-            if "owner" in self.company: 
+
+        if self.match("title", "misc") or self.match("company", "misc") or self.title == "intern": 
+            if self.company == "owner": 
                 if self.match("title", "misc", "valid"): 
                     return '유효', ''
             return '비유효', '기타 비유효'
@@ -192,7 +191,7 @@ class Validate(RowOperations, HandleFiles):
         seonhye_row = helper.lookup_df(self.seonhye_confirm_df, 'Email', self.email)
 
         if not seonhye_row.empty:
-            return seonhye_row["MKT Review(유효/비유효/홀딩)"], ''
+            return seonhye_row["MKT Review(유효/비유효/홀딩)"], 'Seonhye Review'
         return self.row["MKT Review(유효/비유효/홀딩)"], self.row["MKT Review(사유)"]
 
     def overwrite_sales(self):

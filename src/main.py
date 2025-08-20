@@ -31,7 +31,7 @@ def main(args):
         parser.error("You must provide a date to continue.")
     
     if not args.mode: 
-        parser.error("YOu must provide an option for either validate or normalize.")
+        parser.error("You must provide an option for either validate or normalize.")
 
     handle_files = HandleFiles(args=args)
 
