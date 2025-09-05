@@ -73,7 +73,6 @@ class Initialize(HandleFiles):
 
         main_df = pd.read_csv(
             self.main_path,
-            usecols=["First Name", "Last Name", "Email", "Company (Custom)", "Title", "Related Record Owner"],
             index_col=False)
     
         # and make a copy of main

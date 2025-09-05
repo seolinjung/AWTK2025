@@ -37,9 +37,9 @@ class Validate(RowOperations, HandleFiles):
         if len(record_owner_arr) == 2:
             alt_orders.append(" ".join([record_owner_arr[1], record_owner_arr[0]]))
 
-        # if the name matches ae bdr list 
+        # if the name matches ae bdr or sdr list 
         for order in alt_orders: 
-            if order in self.ae_bdr:
+            if order in self.ae_bdr or self.sdr:
                 return True
         
         return False

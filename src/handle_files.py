@@ -26,6 +26,7 @@ class HandleFiles:
         self.special_domains = self.retrieve_json("special-domains")
 
         self.ae_bdr = self.retrieve_json("ae-bdr")
+        self.sdr = self.retrieve_json("sdr-record-owners")
 
     def retrieve_json(self, input):
 
